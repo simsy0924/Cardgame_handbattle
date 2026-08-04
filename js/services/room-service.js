@@ -25,6 +25,10 @@ function roomRef(code) {
   return ref(realtime, roomPath(code));
 }
 
+function seatRef(code, role) {
+  return ref(realtime, `${roomPath(code)}/${role}`);
+}
+
 function generateRoomCode() {
   return Array.from({ length: APP_CONFIG.roomCodeLength }, () => {
     return CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
@@ -42,8 +46,27 @@ function makeSeat({ uid, name, seatToken }) {
   };
 }
 
+function isSameSeat(seat, uid, seatToken) {
+  return Boolean(seat && seat.uid === uid && seat.token === seatToken);
+}
+
+async function readRoom(code) {
+  try {
+    return await get(roomRef(code));
+  } catch (error) {
+    if (String(error?.code || '').toUpperCase().includes('PERMISSION_DENIED')) {
+      throw new Error('방을 조회할 권한이 없습니다. 로그인 상태와 Firebase 규칙을 확인하세요.');
+    }
+    throw error;
+  }
+}
+
 export function normaliseRoomCode(value) {
-  return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, APP_CONFIG.roomCodeLength);
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, APP_CONFIG.roomCodeLength);
 }
 
 export async function createRoom({ uid, name }) {
@@ -64,13 +87,15 @@ export async function createRoom({ uid, name }) {
       startedAt: null,
     };
 
-    const result = await runTransaction(target, (current) => current === null ? room : undefined, {
-      applyLocally: false,
-    });
+    const result = await runTransaction(
+      target,
+      (current) => (current === null ? room : undefined),
+      { applyLocally: false },
+    );
 
     if (result.committed) {
       await attachPresence(code, 'host', seatToken);
-      return { code, role: 'host', seatToken, room };
+      return { code, role: 'host', seatToken, room: result.snapshot.val() || room };
     }
   }
 
@@ -79,71 +104,86 @@ export async function createRoom({ uid, name }) {
 
 export async function joinRoom({ code, uid, name, seatToken = makeSeatToken() }) {
   if (!uid) throw new Error('로그인이 필요합니다.');
+
   const normalisedCode = normaliseRoomCode(code);
-  if (normalisedCode.length !== APP_CONFIG.roomCodeLength) throw new Error('4자리 방 코드를 입력하세요.');
-
-  const target = roomRef(normalisedCode);
-
-  // Realtime Database 트랜잭션은 해당 경로가 로컬 캐시에 없으면
-  // 서버 값을 받기 전에 update 함수에 null을 먼저 전달할 수 있다.
-  // 참가 트랜잭션 전에 한 번 읽어 두어 실제 방을 null로 오인하지 않게 한다.
-  let initialSnapshot;
-  try {
-    initialSnapshot = await get(target);
-  } catch (error) {
-    if (String(error?.code || '').toUpperCase().includes('PERMISSION_DENIED')) {
-      throw new Error('방을 조회할 권한이 없습니다. 로그인 상태와 Firebase 규칙을 확인하세요.');
-    }
-    throw error;
+  if (normalisedCode.length !== APP_CONFIG.roomCodeLength) {
+    throw new Error('4자리 방 코드를 입력하세요.');
   }
+
+  const initialSnapshot = await readRoom(normalisedCode);
   if (!initialSnapshot.exists()) throw new Error('존재하지 않는 방입니다.');
 
-  let rejection = '방에 참가할 수 없습니다.';
+  const initialRoom = initialSnapshot.val();
+  if (initialRoom.status === 'closed') throw new Error('종료된 방입니다.');
 
-  const result = await runTransaction(target, (room) => {
-    if (!room) {
-      rejection = '방이 사라졌습니다.';
-      return;
-    }
-    if (room.status === 'closed') {
-      rejection = '종료된 방입니다.';
-      return;
-    }
-    if (room.host?.uid === uid && room.host?.token === seatToken) {
-      room.host.connected = true;
-      room.host.lastSeenAt = Date.now();
-      room.updatedAt = Date.now();
-      return room;
-    }
-    if (room.guest?.uid === uid && room.guest?.token === seatToken) {
-      room.guest.connected = true;
-      room.guest.lastSeenAt = Date.now();
-      room.updatedAt = Date.now();
-      return room;
-    }
-    if (room.status !== 'waiting') {
-      rejection = '이미 게임이 시작된 방입니다.';
-      return;
-    }
-    if (room.guest) {
+  if (isSameSeat(initialRoom.host, uid, seatToken)) {
+    await update(seatRef(normalisedCode, 'host'), {
+      connected: true,
+      lastSeenAt: serverTimestamp(),
+    });
+    await attachPresence(normalisedCode, 'host', seatToken);
+    const latest = await readRoom(normalisedCode);
+    return { code: normalisedCode, role: 'host', seatToken, room: latest.val() };
+  }
+
+  if (isSameSeat(initialRoom.guest, uid, seatToken)) {
+    await update(seatRef(normalisedCode, 'guest'), {
+      connected: true,
+      lastSeenAt: serverTimestamp(),
+    });
+    await attachPresence(normalisedCode, 'guest', seatToken);
+    const latest = await readRoom(normalisedCode);
+    return { code: normalisedCode, role: 'guest', seatToken, room: latest.val() };
+  }
+
+  if (initialRoom.status !== 'waiting') {
+    throw new Error('이미 게임이 시작된 방입니다.');
+  }
+
+  const candidate = makeSeat({ uid, name, seatToken });
+  let rejection = '이미 두 명이 참가한 방입니다.';
+
+  const result = await runTransaction(
+    seatRef(normalisedCode, 'guest'),
+    (currentGuest) => {
+      if (currentGuest === null) return candidate;
+
+      if (isSameSeat(currentGuest, uid, seatToken)) {
+        return {
+          ...currentGuest,
+          name,
+          connected: true,
+          lastSeenAt: Date.now(),
+        };
+      }
+
       rejection = '이미 두 명이 참가한 방입니다.';
-      return;
-    }
-
-    room.guest = makeSeat({ uid, name, seatToken });
-    room.updatedAt = Date.now();
-    return room;
-  }, { applyLocally: false });
+      return undefined;
+    },
+    { applyLocally: false },
+  );
 
   if (!result.committed) throw new Error(rejection);
-  const room = result.snapshot.val();
-  const role = room.host?.uid === uid && room.host?.token === seatToken ? 'host' : 'guest';
-  await attachPresence(normalisedCode, role, seatToken);
-  return { code: normalisedCode, role, seatToken, room };
+
+  await update(roomRef(normalisedCode), { updatedAt: serverTimestamp() });
+  await attachPresence(normalisedCode, 'guest', seatToken);
+
+  const latestSnapshot = await readRoom(normalisedCode);
+  if (!latestSnapshot.exists()) throw new Error('방이 사라졌습니다.');
+
+  return {
+    code: normalisedCode,
+    role: 'guest',
+    seatToken,
+    room: latestSnapshot.val(),
+  };
 }
 
 export async function reconnectRoom(session, uid) {
-  if (!session || !uid || session.uid !== uid) throw new Error('복구할 수 있는 세션이 아닙니다.');
+  if (!session || !uid || session.uid !== uid) {
+    throw new Error('복구할 수 있는 세션이 아닙니다.');
+  }
+
   return joinRoom({
     code: session.roomCode,
     uid,
@@ -157,45 +197,36 @@ export function subscribeRoom(code, callback) {
 }
 
 export async function startRoom(code, uid) {
-  let rejection = '게임을 시작할 수 없습니다.';
-  const result = await runTransaction(roomRef(code), (room) => {
-    if (!room) {
-      rejection = '방이 사라졌습니다.';
-      return;
-    }
-    if (room.host?.uid !== uid) {
-      rejection = '호스트만 게임을 시작할 수 있습니다.';
-      return;
-    }
-    if (!room.guest) {
-      rejection = '상대가 참가해야 합니다.';
-      return;
-    }
-    if (room.status !== 'waiting') {
-      rejection = '이미 게임이 시작되었습니다.';
-      return;
-    }
+  const normalisedCode = normaliseRoomCode(code);
+  const snapshot = await readRoom(normalisedCode);
+  if (!snapshot.exists()) throw new Error('방이 사라졌습니다.');
 
-    room.status = 'playing';
-    room.startedAt = Date.now();
-    room.updatedAt = Date.now();
-    return room;
-  }, { applyLocally: false });
+  const room = snapshot.val();
+  if (room.host?.uid !== uid) throw new Error('호스트만 게임을 시작할 수 있습니다.');
+  if (!room.guest) throw new Error('상대가 참가해야 합니다.');
+  if (room.status !== 'waiting') throw new Error('이미 게임이 시작되었습니다.');
 
-  if (!result.committed) throw new Error(rejection);
-  return result.snapshot.val();
+  await update(roomRef(normalisedCode), {
+    status: 'playing',
+    startedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  const latest = await readRoom(normalisedCode);
+  return latest.val();
 }
 
 export async function leaveRoom(code, role, uid, seatToken) {
   await detachPresence();
 
-  const target = roomRef(code);
+  const normalisedCode = normaliseRoomCode(code);
+  const target = roomRef(normalisedCode);
   const snapshot = await get(target);
   const room = snapshot.val();
   if (!room) return;
 
   const seat = room?.[role];
-  if (!seat || seat.uid !== uid || seat.token !== seatToken) return;
+  if (!isSameSeat(seat, uid, seatToken)) return;
 
   if (role === 'host' && room.status === 'waiting') {
     await remove(target);
@@ -203,11 +234,11 @@ export async function leaveRoom(code, role, uid, seatToken) {
   }
 
   if (role === 'guest' && room.status === 'waiting') {
-    await update(target, { guest: null, updatedAt: Date.now() });
+    await update(target, { guest: null, updatedAt: serverTimestamp() });
     return;
   }
 
-  await update(ref(realtime, `${roomPath(code)}/${role}`), {
+  await update(seatRef(normalisedCode, role), {
     connected: false,
     lastSeenAt: serverTimestamp(),
   });
@@ -234,51 +265,52 @@ async function detachPresence() {
 async function attachPresence(code, role, seatToken) {
   await detachPresence();
   const generation = presenceGeneration;
-  const seat = ref(realtime, `${roomPath(code)}/${role}`);
+  const seat = seatRef(code, role);
   const connectedRef = ref(realtime, '.info/connected');
 
   const snapshot = await get(seat);
   if (snapshot.val()?.token !== seatToken) return;
 
-  // 모바일에서는 탭/앱 전환만 해도 Firebase 연결이 잠시 끊길 수 있다.
-  // .info/connected가 다시 true가 될 때마다 접속 상태를 복구하고,
-  // 다음 연결 종료를 위한 onDisconnect 작업도 새로 등록한다.
-  presenceUnsubscribe = onValue(connectedRef, async (connectionSnapshot) => {
-    if (connectionSnapshot.val() !== true || generation !== presenceGeneration) return;
+  presenceUnsubscribe = onValue(
+    connectedRef,
+    async (connectionSnapshot) => {
+      if (connectionSnapshot.val() !== true || generation !== presenceGeneration) return;
 
-    try {
-      const currentSeat = await get(seat);
-      if (generation !== presenceGeneration || currentSeat.val()?.token !== seatToken) return;
+      try {
+        const currentSeat = await get(seat);
+        if (generation !== presenceGeneration || currentSeat.val()?.token !== seatToken) return;
 
-      if (activeDisconnect) {
-        try {
-          await activeDisconnect.cancel();
-        } catch (error) {
-          console.warn('이전 접속 종료 예약 해제 실패:', error);
+        if (activeDisconnect) {
+          try {
+            await activeDisconnect.cancel();
+          } catch (error) {
+            console.warn('이전 접속 종료 예약 해제 실패:', error);
+          }
+          activeDisconnect = null;
         }
-        activeDisconnect = null;
+
+        const disconnect = onDisconnect(seat);
+        await disconnect.update({
+          connected: false,
+          lastSeenAt: serverTimestamp(),
+        });
+
+        if (generation !== presenceGeneration) {
+          await disconnect.cancel();
+          return;
+        }
+
+        activeDisconnect = disconnect;
+        await update(seat, {
+          connected: true,
+          lastSeenAt: serverTimestamp(),
+        });
+      } catch (error) {
+        console.warn('접속 상태 복구 실패:', error);
       }
-
-      const disconnect = onDisconnect(seat);
-      await disconnect.update({
-        connected: false,
-        lastSeenAt: serverTimestamp(),
-      });
-
-      if (generation !== presenceGeneration) {
-        await disconnect.cancel();
-        return;
-      }
-
-      activeDisconnect = disconnect;
-      await update(seat, {
-        connected: true,
-        lastSeenAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.warn('접속 상태 복구 실패:', error);
-    }
-  }, (error) => {
-    console.warn('Firebase 연결 상태 감시 실패:', error);
-  });
+    },
+    (error) => {
+      console.warn('Firebase 연결 상태 감시 실패:', error);
+    },
+  );
 }
