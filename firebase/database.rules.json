@@ -1,0 +1,25 @@
+{
+  "rules": {
+    "handbattleV2": {
+      "rooms": {
+        "$roomCode": {
+          ".read": "auth != null",
+          ".write": "auth != null && ((!data.exists() && newData.child('host/uid').val() === auth.uid) || data.child('host/uid').val() === auth.uid || (data.child('guest/uid').val() === auth.uid && newData.child('host').val() === data.child('host').val() && newData.child('status').val() === data.child('status').val() && newData.child('code').val() === data.child('code').val() && newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('startedAt').val() === data.child('startedAt').val()) || (!data.child('guest').exists() && newData.child('guest/uid').val() === auth.uid && newData.child('host').val() === data.child('host').val() && newData.child('status').val() === data.child('status').val() && newData.child('code').val() === data.child('code').val() && newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('startedAt').val() === data.child('startedAt').val()))",
+          "schemaVersion": { ".validate": "newData.isNumber() && newData.val() === 1" },
+          "code": { ".validate": "newData.isString() && newData.val() === $roomCode" },
+          "status": { ".validate": "newData.val() === 'waiting' || newData.val() === 'playing' || newData.val() === 'closed'" },
+          "host": {
+            "uid": { ".validate": "newData.isString()" },
+            "name": { ".validate": "newData.isString() && newData.val().length <= 12" },
+            "token": { ".validate": "newData.isString()" }
+          },
+          "guest": {
+            "uid": { ".validate": "newData.isString()" },
+            "name": { ".validate": "newData.isString() && newData.val().length <= 12" },
+            "token": { ".validate": "newData.isString()" }
+          }
+        }
+      }
+    }
+  }
+}
