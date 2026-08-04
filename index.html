@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080810">
+  <meta name="description" content="HAND BATTLE 온라인 로비">
+  <title>HAND BATTLE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Cinzel:wght@600;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="background-glow" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <section id="lobbyView" class="view" aria-labelledby="mainTitle">
+      <header class="hero">
+        <p class="eyebrow">Strategic Card Game</p>
+        <h1 id="mainTitle">HAND<br>BATTLE</h1>
+        <p class="subtitle">패가 목숨 · 핸드 배틀 TCG</p>
+      </header>
+
+      <div class="content-grid">
+        <section class="panel account-panel" aria-labelledby="accountTitle">
+          <div class="panel-title-row">
+            <h2 id="accountTitle"><span class="panel-icon">♟</span>계정</h2>
+            <span id="connectionBadge" class="badge badge-muted">연결 확인 중</span>
+          </div>
+
+          <div id="loggedOutArea">
+            <button id="googleLoginButton" class="button button-primary" type="button">Google로 로그인</button>
+            <p class="helper-text">로그인하면 프로필과 방 재접속 정보가 기기 사이에서 유지됩니다.</p>
+          </div>
+
+          <div id="profileArea" class="profile hidden">
+            <div class="profile-summary">
+              <div id="profileAvatarFallback" class="avatar avatar-fallback" aria-hidden="true">H</div>
+              <img id="profileAvatar" class="avatar hidden" alt="프로필 사진">
+              <div class="profile-copy">
+                <strong id="profileName">플레이어</strong>
+                <span id="profileStats">0승 0패 · 레이팅 1000</span>
+              </div>
+              <span id="profileCurrency" class="currency">0 G</span>
+            </div>
+
+            <form id="nicknameForm" class="inline-form">
+              <label class="sr-only" for="nicknameInput">닉네임 변경</label>
+              <input id="nicknameInput" maxlength="12" autocomplete="nickname" placeholder="닉네임 변경">
+              <button class="button button-outline button-compact" type="submit">저장</button>
+            </form>
+            <button id="logoutButton" class="button button-ghost" type="button">로그아웃</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="playerTitle">
+          <h2 id="playerTitle"><span class="panel-icon">✎</span>플레이어</h2>
+          <label class="field-label" for="playerNameInput">대전에 표시할 이름</label>
+          <input id="playerNameInput" maxlength="12" autocomplete="nickname" placeholder="닉네임 입력">
+        </section>
+
+        <section id="resumePanel" class="panel panel-highlight hidden" aria-labelledby="resumeTitle">
+          <h2 id="resumeTitle"><span class="panel-icon">↻</span>이전 방</h2>
+          <p id="resumeDescription" class="status-box">이전에 참가했던 방이 있습니다.</p>
+          <div class="button-row">
+            <button id="resumeButton" class="button button-primary" type="button">다시 들어가기</button>
+            <button id="forgetSessionButton" class="button button-ghost" type="button">기록 삭제</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="createRoomTitle">
+          <h2 id="createRoomTitle"><span class="panel-icon">＋</span>새 방 만들기</h2>
+          <button id="createRoomButton" class="button button-primary" type="button">방 만들기</button>
+          <p id="createRoomStatus" class="status-box hidden" role="status"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="joinRoomTitle">
+          <h2 id="joinRoomTitle"><span class="panel-icon">→</span>방 참가</h2>
+          <form id="joinRoomForm">
+            <label class="sr-only" for="roomCodeInput">방 코드 4자리</label>
+            <input id="roomCodeInput" class="room-code-input" maxlength="4" inputmode="text" autocomplete="off" placeholder="AB12">
+            <button id="joinRoomButton" class="button button-outline" type="submit">참가하기</button>
+          </form>
+          <p id="joinRoomStatus" class="status-box hidden" role="status"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="singlePlayerTitle">
+          <h2 id="singlePlayerTitle"><span class="panel-icon">◆</span>연습</h2>
+          <button id="aiBattleButton" class="button button-outline" type="button">AI전 입장</button>
+          <p class="helper-text">게임 엔진이 연결되면 이 버튼이 AI 대전을 시작합니다.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="helpTitle">
+          <h2 id="helpTitle"><span class="panel-icon">?</span>도움말</h2>
+          <div class="button-row">
+            <button id="tutorialButton" class="button button-outline" type="button">튜토리얼</button>
+            <button id="aboutButton" class="button button-ghost" type="button">개발 상태</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="waitingView" class="view hidden" aria-labelledby="waitingTitle">
+      <div class="waiting-card">
+        <p class="eyebrow">Online Room</p>
+        <h2 id="waitingTitle">대기실</h2>
+
+        <div class="room-code-box">
+          <span>방 코드</span>
+          <strong id="waitingRoomCode">----</strong>
+          <button id="copyRoomCodeButton" class="button button-ghost button-compact" type="button">복사</button>
+        </div>
+
+        <div class="seat-grid">
+          <article class="seat-card">
+            <span class="seat-label">HOST</span>
+            <strong id="hostName">대기 중</strong>
+            <span id="hostConnection" class="badge badge-muted">비어 있음</span>
+          </article>
+          <div class="versus">VS</div>
+          <article class="seat-card">
+            <span class="seat-label">GUEST</span>
+            <strong id="guestName">대기 중</strong>
+            <span id="guestConnection" class="badge badge-muted">비어 있음</span>
+          </article>
+        </div>
+
+        <p id="waitingStatus" class="status-box" role="status">상대를 기다리는 중입니다.</p>
+
+        <div class="button-row waiting-actions">
+          <button id="startMatchButton" class="button button-primary" type="button" disabled>게임 시작</button>
+          <button id="leaveRoomButton" class="button button-danger" type="button">방 나가기</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameView" class="view hidden" aria-labelledby="gameShellTitle">
+      <div class="game-shell-header">
+        <div>
+          <p class="eyebrow">Game Engine Mount</p>
+          <h2 id="gameShellTitle">게임 영역</h2>
+        </div>
+        <button id="returnLobbyButton" class="button button-ghost button-compact" type="button">로비로</button>
+      </div>
+      <div id="gameMount" class="game-mount" tabindex="-1"></div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+    <section id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialModalTitle">
+      <h2 id="tutorialModalTitle">시작하기</h2>
+      <ol class="tutorial-list">
+        <li>표시할 이름을 정하고 로그인합니다.</li>
+        <li>방을 만들거나 4자리 코드를 입력해 참가합니다.</li>
+        <li>두 자리가 채워지면 호스트가 게임을 시작합니다.</li>
+        <li>이후 처리는 별도로 연결할 카드게임 엔진이 담당합니다.</li>
+      </ol>
+      <button class="button button-primary modal-close" type="button">확인</button>
+    </section>
+
+    <section id="aboutModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
+      <h2 id="aboutModalTitle">현재 구현 범위</h2>
+      <p>계정, 프로필, 방 생성·참가, 대기실, 재접속, AI전 진입점까지만 구현되어 있습니다.</p>
+      <p>카드 데이터, 덱 구성, 효과 처리, 턴 진행, 전투 동기화는 의도적으로 포함하지 않았습니다.</p>
+      <button class="button button-primary modal-close" type="button">확인</button>
+    </section>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.totalWins == 0
+        && request.resource.data.totalLosses == 0
+        && request.resource.data.totalGames == 0
+        && request.resource.data.rating == 1000
+        && request.resource.data.currency == 0;
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['nickname', 'email', 'photoURL', 'preferences', 'updatedAt']);
+    }
+  }
+}
