@@ -81,11 +81,26 @@ export async function joinRoom({ code, uid, name, seatToken = makeSeatToken() })
   if (normalisedCode.length !== APP_CONFIG.roomCodeLength) throw new Error('4자리 방 코드를 입력하세요.');
 
   const target = roomRef(normalisedCode);
+
+  // Realtime Database 트랜잭션은 해당 경로가 로컬 캐시에 없으면
+  // 서버 값을 받기 전에 update 함수에 null을 먼저 전달할 수 있다.
+  // 참가 트랜잭션 전에 한 번 읽어 두어 실제 방을 null로 오인하지 않게 한다.
+  let initialSnapshot;
+  try {
+    initialSnapshot = await get(target);
+  } catch (error) {
+    if (String(error?.code || '').toUpperCase().includes('PERMISSION_DENIED')) {
+      throw new Error('방을 조회할 권한이 없습니다. 로그인 상태와 Firebase 규칙을 확인하세요.');
+    }
+    throw error;
+  }
+  if (!initialSnapshot.exists()) throw new Error('존재하지 않는 방입니다.');
+
   let rejection = '방에 참가할 수 없습니다.';
 
   const result = await runTransaction(target, (room) => {
     if (!room) {
-      rejection = '존재하지 않는 방입니다.';
+      rejection = '방이 사라졌습니다.';
       return;
     }
     if (room.status === 'closed') {
