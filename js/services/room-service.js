@@ -5,7 +5,7 @@ import {
   ref,
   remove,
   runTransaction,
-  set,
+  serverTimestamp,
   update,
 } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js';
 import { APP_CONFIG } from '../config.js';
@@ -14,6 +14,8 @@ import { makeSeatToken } from '../core/session.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 let activeDisconnect = null;
+let presenceUnsubscribe = null;
+let presenceGeneration = 0;
 
 function roomPath(code) {
   return `${APP_CONFIG.roomRoot}/${normaliseRoomCode(code)}`;
@@ -185,10 +187,8 @@ export async function startRoom(code, uid) {
 }
 
 export async function leaveRoom(code, role, uid, seatToken) {
-  if (activeDisconnect) {
-    try { await activeDisconnect.cancel(); } catch (error) { console.warn('접속 종료 예약 해제 실패:', error); }
-    activeDisconnect = null;
-  }
+  await detachPresence();
+
   const target = roomRef(code);
   const snapshot = await get(target);
   const room = snapshot.val();
@@ -209,22 +209,76 @@ export async function leaveRoom(code, role, uid, seatToken) {
 
   await update(ref(realtime, `${roomPath(code)}/${role}`), {
     connected: false,
-    lastSeenAt: Date.now(),
+    lastSeenAt: serverTimestamp(),
   });
 }
 
-async function attachPresence(code, role, seatToken) {
+async function detachPresence() {
+  presenceGeneration += 1;
+
+  if (typeof presenceUnsubscribe === 'function') {
+    presenceUnsubscribe();
+    presenceUnsubscribe = null;
+  }
+
   if (activeDisconnect) {
-    try { await activeDisconnect.cancel(); } catch (error) { console.warn('이전 접속 종료 예약 해제 실패:', error); }
+    try {
+      await activeDisconnect.cancel();
+    } catch (error) {
+      console.warn('접속 종료 예약 해제 실패:', error);
+    }
     activeDisconnect = null;
   }
+}
+
+async function attachPresence(code, role, seatToken) {
+  await detachPresence();
+  const generation = presenceGeneration;
   const seat = ref(realtime, `${roomPath(code)}/${role}`);
+  const connectedRef = ref(realtime, '.info/connected');
+
   const snapshot = await get(seat);
   if (snapshot.val()?.token !== seatToken) return;
 
-  const disconnect = onDisconnect(seat);
-  await disconnect.update({ connected: false, lastSeenAt: Date.now() });
-  activeDisconnect = disconnect;
-  await set(ref(realtime, `${roomPath(code)}/${role}/connected`), true);
-  await set(ref(realtime, `${roomPath(code)}/${role}/lastSeenAt`), Date.now());
+  // 모바일에서는 탭/앱 전환만 해도 Firebase 연결이 잠시 끊길 수 있다.
+  // .info/connected가 다시 true가 될 때마다 접속 상태를 복구하고,
+  // 다음 연결 종료를 위한 onDisconnect 작업도 새로 등록한다.
+  presenceUnsubscribe = onValue(connectedRef, async (connectionSnapshot) => {
+    if (connectionSnapshot.val() !== true || generation !== presenceGeneration) return;
+
+    try {
+      const currentSeat = await get(seat);
+      if (generation !== presenceGeneration || currentSeat.val()?.token !== seatToken) return;
+
+      if (activeDisconnect) {
+        try {
+          await activeDisconnect.cancel();
+        } catch (error) {
+          console.warn('이전 접속 종료 예약 해제 실패:', error);
+        }
+        activeDisconnect = null;
+      }
+
+      const disconnect = onDisconnect(seat);
+      await disconnect.update({
+        connected: false,
+        lastSeenAt: serverTimestamp(),
+      });
+
+      if (generation !== presenceGeneration) {
+        await disconnect.cancel();
+        return;
+      }
+
+      activeDisconnect = disconnect;
+      await update(seat, {
+        connected: true,
+        lastSeenAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn('접속 상태 복구 실패:', error);
+    }
+  }, (error) => {
+    console.warn('Firebase 연결 상태 감시 실패:', error);
+  });
 }
