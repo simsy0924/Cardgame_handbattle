@@ -33,17 +33,25 @@ export const cards = {
     effects: [
       {
         id: 1,
-        text: "자신 전개 단계에 발동할 수 있다. 이 카드를 공개한다.",
+        text: "자신 전개 단계에 이 카드를 공개하고 발동할 수 있다. 자신은 1장 드로우한다.",
         type: "ACTIVATED",
         optional: true,
+        sourceZone: "HAND",
         timing: {
           turn: "SELF",
           phase: "DEPLOY",
         },
-        resolution: [
+        cost: [
           {
             type: "REVEAL",
             target: "SELF_CARD",
+          },
+        ],
+        resolution: [
+          {
+            type: "DRAW",
+            player: "SELF",
+            count: 1,
           },
         ],
       },
@@ -797,7 +805,6 @@ export const cards = {
     cardType: "magic",
     isKeyCard: true,
     theme: "펭귄",
-
     nonEffectText: [
       {
         text: "이 카드명의 2효과는 1턴에 1번밖에 발동할 수 없다.",
