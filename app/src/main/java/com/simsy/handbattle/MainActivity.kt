@@ -807,9 +807,6 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun OnlineStartScreen(}
-
-@Composable
 private fun OnlineStartScreen(
     currentUser: FirebaseUser?,
     signInEnabled: Boolean,
