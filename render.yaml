@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: hand-battle-ai-mcp
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix ai-duel install --omit=dev
+    startCommand: npm --prefix ai-duel start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24.0.0"
+      - key: ALLOWED_ORIGINS
+        value: "https://simsy0924.github.io,http://localhost:8787,http://127.0.0.1:8787"
