@@ -1,3 +1,12 @@
+import {
+  createDuel,
+  defaultPlayerDeck,
+  duelSnapshot,
+  DuelRuleError,
+  executeDuelCommand,
+  validatePlayerDeck,
+} from "./duel.js";
+
 const ROOM_KEY = "room";
 const ROOM_TTL_MS = 24 * 60 * 60 * 1_000;
 const MAX_SOCKET_MESSAGE_LENGTH = 4_096;
@@ -121,6 +130,8 @@ export class Room {
         return this.readState(request);
       case "POST /_internal/ready":
         return this.setReady(request);
+      case "POST /_internal/action":
+        return this.gameAction(request);
       case "POST /_internal/leave":
         return this.leaveRoom(request);
       case "GET /_internal/stream":
@@ -157,6 +168,7 @@ export class Room {
             uid: principal.uid,
             displayName: cleanDisplayName(body.displayName, principal.displayName),
             ready: false,
+            deck: null,
             seatTokenHash: await hashSeatToken(seatToken),
           },
           null,
@@ -192,6 +204,7 @@ export class Room {
         uid: principal.uid,
         displayName: cleanDisplayName(body.displayName, principal.displayName),
         ready: false,
+        deck: null,
         seatTokenHash: await hashSeatToken(seatToken),
       };
       room.phase = readyPhase(room.players);
@@ -251,8 +264,23 @@ export class Room {
       if (!room) return jsonResponse({ error: "room_not_found" }, 404);
       const seat = await this.findSeat(room, principal.uid, token);
       if (seat < 0) return jsonResponse({ error: "invalid_seat_token" }, 403);
+      if (room.phase === "playing" || room.phase === "finished") {
+        return jsonResponse({ error: "game_started" }, 409);
+      }
+      if (body.ready) {
+        try {
+          room.players[seat].deck = body.deck === undefined
+            ? room.players[seat].deck ?? defaultPlayerDeck()
+            : validatePlayerDeck(body.deck);
+        } catch (error) {
+          return jsonResponse({
+            error: "invalid_deck",
+            message: error instanceof Error ? error.message : "덱 구성을 확인하세요.",
+          }, 400);
+        }
+      }
       room.players[seat].ready = body.ready;
-      room.phase = readyPhase(room.players);
+      this.startGameIfReady(room);
       room.sequence += 1;
       room.lastActivityAt = Date.now();
       await this.ctx.storage.put(ROOM_KEY, room);
@@ -260,6 +288,56 @@ export class Room {
       await this.broadcast(room);
       return jsonResponse({ seat, room: this.snapshot(room, principal.uid) });
     });
+  }
+
+  async gameAction(request) {
+    const principal = principalFrom(request);
+    const token = request.headers.get("X-Seat-Token") ?? "";
+    let body;
+    try {
+      body = await readJsonObject(request);
+    } catch {
+      return jsonResponse({ error: "invalid_request" }, 400);
+    }
+    if (!principal || typeof body.type !== "string") {
+      return jsonResponse({ error: "invalid_request" }, 400);
+    }
+
+    return this.serialized(async () => {
+      const room = await this.ctx.storage.get(ROOM_KEY);
+      if (!room) return jsonResponse({ error: "room_not_found" }, 404);
+      const seat = await this.findSeat(room, principal.uid, token);
+      if (seat < 0) return jsonResponse({ error: "invalid_seat_token" }, 403);
+      if (room.phase !== "playing" || !room.game) {
+        return jsonResponse({ error: "game_not_started" }, 409);
+      }
+
+      try {
+        room.game = executeDuelCommand(room.game, seat, body);
+      } catch (error) {
+        const status = error instanceof DuelRuleError && error.code === "game_finished" ? 409 : 400;
+        return jsonResponse({
+          error: error instanceof DuelRuleError ? error.code : "invalid_action",
+          message: error instanceof Error ? error.message : "Invalid game action",
+        }, status);
+      }
+      if (room.game.finished) room.phase = "finished";
+      room.sequence += 1;
+      room.lastActivityAt = Date.now();
+      await this.ctx.storage.put(ROOM_KEY, room);
+      await this.scheduleExpiry(room.lastActivityAt);
+      await this.broadcast(room);
+      return jsonResponse({ seat, room: this.snapshot(room, principal.uid) });
+    });
+  }
+
+  startGameIfReady(room) {
+    if (room.players[0]?.ready && room.players[1]?.ready) {
+      room.game = createDuel(room.players.map((player) => player.deck ?? defaultPlayerDeck()));
+      room.phase = "playing";
+    } else {
+      room.phase = readyPhase(room.players);
+    }
   }
 
   async leaveRoom(request) {
@@ -279,6 +357,8 @@ export class Room {
       }
 
       room.players[seat] = null;
+      room.game = null;
+      for (const player of room.players) if (player) player.ready = false;
       room.phase = readyPhase(room.players);
       room.sequence += 1;
       room.lastActivityAt = Date.now();
@@ -352,8 +432,13 @@ export class Room {
         socket.send(JSON.stringify({ type: "error", error: "seat_unavailable" }));
         return;
       }
+      if (room.phase === "playing" || room.phase === "finished") {
+        socket.send(JSON.stringify({ type: "error", error: "game_started" }));
+        return;
+      }
       room.players[attachment.seat].ready = command.ready;
-      room.phase = readyPhase(room.players);
+      if (command.ready) room.players[attachment.seat].deck ??= defaultPlayerDeck();
+      this.startGameIfReady(room);
       room.sequence += 1;
       room.lastActivityAt = Date.now();
       await this.ctx.storage.put(ROOM_KEY, room);
@@ -402,17 +487,19 @@ export class Room {
       if (attachment?.uid) connectedSeats.add(attachment.seat);
     }
 
+    const viewerSeat = room.players.findIndex((player) => player?.uid === viewerUid);
     return {
       code: room.code,
       phase: room.phase,
       sequence: room.sequence,
-      viewerSeat: room.players.findIndex((player) => player?.uid === viewerUid),
+      viewerSeat,
       players: room.players.map((player, seat) => player ? {
         seat,
         displayName: player.displayName,
         ready: player.ready,
         connected: connectedSeats.has(seat),
       } : null),
+      duel: room.game && viewerSeat >= 0 ? duelSnapshot(room.game, viewerSeat) : null,
       updatedAt: room.lastActivityAt,
     };
   }

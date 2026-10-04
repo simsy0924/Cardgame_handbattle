@@ -38,8 +38,11 @@ fun RoomLobbyScreen(
     statusMessage: String,
     isSignedIn: Boolean,
     isBusy: Boolean,
+    deckSummary: String,
+    deckLegal: Boolean,
     onSignIn: () -> Unit,
     onReadyChange: (Boolean) -> Unit,
+    onEditDeck: () -> Unit,
     onReconnect: () -> Unit,
     onLeave: () -> Unit,
 ) {
@@ -107,6 +110,19 @@ fun RoomLobbyScreen(
             )
             PlayerSeatCard(seat = 0, player = players.getOrNull(0), isMine = session.seat == 0)
             PlayerSeatCard(seat = 1, player = players.getOrNull(1), isMine = session.seat == 1)
+            Text(
+                text = "내 덱: $deckSummary",
+                color = if (deckLegal) LobbyAccent else Color(0xFFFFB4AB),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            if (!deckLegal) {
+                Text(
+                    text = "메인 덱 40~60장, 메인 카드별 최대 4장, 키 카드별 최대 1장이어야 합니다.",
+                    color = Color(0xFFFFB4AB),
+                    fontSize = 11.sp,
+                )
+            }
 
             when {
                 snapshot == null -> Text(
@@ -140,9 +156,18 @@ fun RoomLobbyScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                OutlinedButton(
+                    onClick = onEditDeck,
+                    enabled = !isBusy && localPlayer?.ready != true,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(if (localPlayer?.ready == true) "준비 취소 후 편집" else "덱 편집")
+                }
                 Button(
                     onClick = { onReadyChange(localPlayer?.ready != true) },
                     enabled = snapshot != null &&
+                        deckLegal &&
                         localPlayer?.connected == true &&
                         opponent?.connected == true &&
                         !isBusy,

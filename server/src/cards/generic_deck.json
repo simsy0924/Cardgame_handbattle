@@ -1,0 +1,1364 @@
+{
+  "effect_filters": {
+    "deck_access": {
+      "includes_any": [
+        {
+          "step": "draw"
+        },
+        {
+          "step": "add_to_hand",
+          "from": [
+            "deck"
+          ]
+        },
+        {
+          "step": "send_to_grave",
+          "from": [
+            "deck"
+          ]
+        },
+        {
+          "step": "add_to_hand",
+          "from": [
+            "grave",
+            "banished"
+          ]
+        },
+        {
+          "step": "summon",
+          "from": [
+            "grave",
+            "banished"
+          ]
+        }
+      ]
+    }
+  },
+  "cards": [
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_001",
+      "name": "카드의 흑기사",
+      "type": "monster",
+      "deck": "key",
+      "attack": 5,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_procedure": {
+        "from": "keydeck",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "cost": {
+          "pay": [
+            {
+              "type": "send_to_grave",
+              "from": "own_field",
+              "filter": {
+                "type": "monster"
+              },
+              "count": {
+                "min": 2,
+                "max": null
+              },
+              "constraint": {
+                "sum": "attack",
+                "op": ">=",
+                "value": 10
+              }
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": true,
+            "targets": [
+              {
+                "kind": "card",
+                "id": "t1",
+                "from": "field_all",
+                "count": 1
+              }
+            ]
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "send_to_grave",
+                  "card": "t1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": null
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": true,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "chain.last.source"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": "opponent",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck_top",
+                  "count": 3
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                },
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": {
+                    "count_of": "s1",
+                    "filter": {
+                      "type": "monster"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_002",
+      "name": "풀려난 항아리의 마귀",
+      "type": "monster",
+      "deck": "key",
+      "attack": 5,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_procedure": {
+        "from": "keydeck",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "cost": {
+          "pay": [
+            {
+              "type": "send_to_grave",
+              "from": "own_field",
+              "filter": {
+                "type": "monster"
+              },
+              "count": {
+                "min": 3,
+                "max": 3
+              }
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": {
+                "card_name": "서치 봉인의 항아리"
+              }
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                },
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "chooser": "self",
+                  "count": 1
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "attack",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                },
+                {
+                  "type": "modify_attack",
+                  "card": "self",
+                  "amount": 1,
+                  "duration": "permanent"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "to": [
+                "grave",
+                "banished"
+              ]
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "restrict",
+                  "what": "add_to_hand_from_deck",
+                  "players": "both",
+                  "duration": "end_of_turn"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": true
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_003",
+      "name": "카드 세계의 영웅",
+      "type": "monster",
+      "deck": "key",
+      "attack": 5,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_procedure": {
+        "from": "keydeck",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "cost": {
+          "pay": [
+            {
+              "type": "send_to_grave",
+              "from": "own_field",
+              "filter": {
+                "card_id": "generic_002"
+              },
+              "count": 1
+            },
+            {
+              "type": "send_to_grave",
+              "from": "own_field",
+              "filter": {
+                "type": "monster",
+                "not_card_id": "generic_002"
+              },
+              "count": 1
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": [
+                    "deck",
+                    "grave",
+                    "banished"
+                  ],
+                  "filter": {
+                    "name": "영웅의 탄생"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": {
+                "ref": "deck_access"
+              }
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": [
+                    "deck",
+                    "grave",
+                    "banished"
+                  ],
+                  "filter": {
+                    "name": "영웅의 탄생"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "to": [
+                "grave",
+                "banished"
+              ]
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": [
+                    "grave",
+                    "banished"
+                  ],
+                  "filter": {
+                    "name": "풀려난 항아리의 마귀"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": true
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_004",
+      "name": "단단한 카드 자물쇠",
+      "type": "trap",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "opponent",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": true,
+            "targets": [
+              {
+                "kind": "card",
+                "id": "t1",
+                "from": "field_all",
+                "count": 1
+              }
+            ]
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "disable_effects",
+                  "card": "t1",
+                  "duration": "end_of_turn"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_005",
+      "name": "서치 봉인의 항아리",
+      "type": "normal",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "return_to_deck",
+                "card": "self",
+                "from": "hand"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": "hand",
+              "reason": "discard"
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "restrict",
+                  "what": "add_to_hand_from_deck",
+                  "players": "both",
+                  "duration": "end_of_turn"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_006",
+      "name": "출입통제",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": {
+                "includes_any": [
+                  {
+                    "step": "summon"
+                  }
+                ]
+              }
+            }
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_007",
+      "name": "신성한 수호자",
+      "type": "monster",
+      "deck": "main",
+      "attack": 1,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "opponent",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "hand"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "restrict",
+                  "what": "banish",
+                  "players": "both",
+                  "duration": "end_of_turn"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "to": [
+                "banished"
+              ]
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "name": "수호의 빛"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": true
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_008",
+      "name": "수호의 빛",
+      "type": "field",
+      "deck": "main",
+      "activation_zone": "field_zone",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "banished",
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field_zone"
+          },
+          "continuous": {
+            "type": "restriction",
+            "restriction": "attack_limit",
+            "max_attackers": 1,
+            "phase": "attack",
+            "players": "both"
+          },
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_009",
+      "name": "유혹의 황금 사과",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "register_effect",
+                  "duration": "end_of_turn",
+                  "uses_chain": false,
+                  "effect": {
+                    "id": "x1",
+                    "timing": {
+                      "turn": null,
+                      "phase": null,
+                      "event": {
+                        "type": "summoned",
+                        "by": "opponent",
+                        "from": "hand"
+                      }
+                    },
+                    "condition": null,
+                    "cost": {
+                      "pay": [],
+                      "isTargeting": false,
+                      "targets": []
+                    },
+                    "action": [
+                      {
+                        "group": 1,
+                        "apply": "simultaneous",
+                        "allow_partial": false,
+                        "steps": [
+                          {
+                            "type": "draw",
+                            "player": "self",
+                            "count": 1
+                          }
+                        ]
+                      }
+                    ],
+                    "limit": null,
+                    "mandatory": true
+                  }
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "card_id"
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_010",
+      "name": "구사일생",
+      "type": "trap",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "attack_declared",
+              "by": "opponent"
+            }
+          },
+          "condition": {
+            "card_location": "hand",
+            "expr": {
+              "compare": {
+                "left": {
+                  "op": "abs_diff",
+                  "a": {
+                    "card": "event.attacker",
+                    "stat": "attack"
+                  },
+                  "b": {
+                    "card": "event.target",
+                    "stat": "attack"
+                  }
+                },
+                "op": ">=",
+                "right": {
+                  "count": "own_hand"
+                }
+              }
+            }
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "set_battle_damage",
+                  "amount": 0
+                },
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_011",
+      "name": "눈에는 눈",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "added_to_hand",
+              "by": "opponent",
+              "from": "deck"
+            }
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 2
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_012",
+      "name": "단 한 번의 기회",
+      "type": "normal",
+      "deck": "key",
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "passive": [
+        {
+          "condition": {
+            "card_location": "grave"
+          },
+          "untargetable": true,
+          "immunity": {
+            "from": "all_other_card_effects"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_013",
+      "name": "일격필살",
+      "type": "spell",
+      "deck": "key",
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "passive": [
+        {
+          "condition": {
+            "card_location": "grave"
+          },
+          "untargetable": true,
+          "immunity": {
+            "from": "all_other_card_effects"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "opponent_hand",
+                  "chooser": "opponent",
+                  "count": 1
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "generic",
+      "tags": [],
+      "id": "generic_014",
+      "name": "영웅의 탄생",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": {
+                "ref": "deck_access"
+              }
+            }
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    }
+  ]
+}

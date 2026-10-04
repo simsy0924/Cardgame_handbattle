@@ -1,0 +1,2067 @@
+[
+  {
+    "id": "penguin_001",
+    "name": "꼬마 펭귄",
+    "type": "monster",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 1,
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "summon",
+                "from": "hand",
+                "card": "self"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 2
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "summoned",
+            "card": "self",
+            "from": null
+          }
+        },
+        "condition": null,
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 2
+        }
+      }
+    ],
+    "deck": "main"
+  },
+  {
+    "id": "penguin_002",
+    "name": "펭귄 부부",
+    "type": "monster",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 2,
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "summoned",
+            "card": "self",
+            "from": "deck"
+          }
+        },
+        "condition": null,
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "tag": "펭귄"
+                },
+                "count": {
+                  "max": 2
+                }
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s2",
+                "from": "hand",
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "discard",
+                "card": "s2"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand_hidden"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": false
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "draw",
+                "player": "self",
+                "count": 2
+              },
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "discard",
+                "card": "s1"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "return_to_deck",
+                "card": "self"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "deck": "main"
+  },
+  {
+    "id": "penguin_003",
+    "name": "펭귄 마을",
+    "type": "normal",
+    "tags": [
+      "펭귄"
+    ],
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand_hidden"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": false
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "draw",
+                "player": "self",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "would_discard",
+            "card": "self",
+            "card_state": "revealed"
+          }
+        },
+        "condition": {
+          "card_location": "hand_revealed"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "replaces": "discard",
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "own_monster_zone",
+                "filter": {
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "s1",
+                "cause": "penguin_003:e2"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "deck": "main"
+  },
+  {
+    "id": "penguin_004",
+    "name": "현자 펭귄",
+    "type": "monster",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 2,
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "field",
+          "exists": {
+            "card_id": "penguin_003",
+            "location": "hand_revealed",
+            "owner": "self"
+          }
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "draw",
+                "player": "self",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "discard",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "field"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      }
+    ],
+    "deck": "main"
+  },
+  {
+    "id": "penguin_005",
+    "name": "수문장 펭귄",
+    "type": "monster",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 3,
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "field",
+          "exists": {
+            "card_id": "penguin_003",
+            "location": "hand_revealed",
+            "owner": "self"
+          }
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "modify_attack",
+                "card": "self",
+                "amount": 1,
+                "duration": "permanent"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "player": "self",
+                "from": "hand",
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "select",
+                "id": "s2",
+                "player": "opponent",
+                "from": "hand",
+                "chooser": "opponent",
+                "count": 1
+              },
+              {
+                "type": "discard",
+                "card": "s1"
+              },
+              {
+                "type": "discard",
+                "card": "s2"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "sent_to_grave",
+            "card_filter": {
+              "type": "monster",
+              "tag": "펭귄",
+              "owner": "self"
+            },
+            "cause_card": "penguin_003"
+          }
+        },
+        "condition": {
+          "card_location": "field"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "opponent_field",
+                "filter": {
+                  "type": "monster"
+                },
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      }
+    ],
+    "deck": "main"
+  },
+  {
+    "id": "penguin_006",
+    "name": "펭귄!돌격!",
+    "type": "normal",
+    "tags": [
+      "펭귄"
+    ],
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "banish",
+              "card": "self",
+              "from": "grave"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "deck": "main"
+  },
+  {
+    "id": "penguin_007",
+    "name": "펭귄의 영광",
+    "type": "spell",
+    "deck": "main",
+    "tags": [
+      "펭귄"
+    ],
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "both",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "filter": {
+                  "name": "펭귄 용사"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              },
+              {
+                "type": "reveal_hand",
+                "player": "opponent",
+                "scope": "all"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "banish",
+              "card": "self",
+              "from": "grave"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "draw",
+                "player": "self",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "limit": null
+      }
+    ]
+  },
+  {
+    "id": "penguin_008",
+    "name": "펭귄 용사",
+    "type": "monster",
+    "deck": "key",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 4,
+    "fetch": {
+      "condition": {
+        "opponent_field": {
+          "has": "monster"
+        }
+      }
+    },
+    "summon_restriction": {
+      "only_by_effects_of": [
+        {
+          "name": "펭귄의 영광"
+        },
+        {
+          "card_id": "penguin_008"
+        }
+      ]
+    },
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "summoned",
+            "card": "self",
+            "from": null
+          }
+        },
+        "condition": null,
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              },
+              {
+                "type": "select",
+                "id": "s2",
+                "from": "deck",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "exclude": [
+                  "s1"
+                ],
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s2"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s3",
+                "from": "hand",
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "discard",
+                "card": "s3"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "opponent",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "field"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "return_to_hand",
+                "card": "self"
+              },
+              {
+                "type": "select",
+                "id": "s1",
+                "from": [
+                  "grave",
+                  "banished"
+                ],
+                "filter": {
+                  "type": "spell",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e3",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "sent_to_grave",
+            "card": "self"
+          }
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "grave"
+              },
+              {
+                "type": "modify_attack",
+                "scope": "own_field",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "amount": 1,
+                "duration": "end_of_turn"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      }
+    ]
+  },
+  {
+    "id": "penguin_009",
+    "name": "펭귄의 일격",
+    "type": "spell",
+    "deck": "key",
+    "tags": [
+      "펭귄"
+    ],
+    "fetch": {
+      "condition": null
+    },
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "effect_activated",
+            "by": "opponent",
+            "effect_filter": {
+              "source_type": "monster"
+            }
+          }
+        },
+        "condition": {
+          "card_location": "hand",
+          "exists": {
+            "location": "own_field",
+            "filter": {
+              "type": "monster",
+              "tag": "펭귄"
+            }
+          }
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            },
+            {
+              "type": "select",
+              "id": "c1",
+              "from": "hand",
+              "chooser": "self",
+              "exclude": [
+                "self"
+              ],
+              "count": 1
+            },
+            {
+              "type": "discard",
+              "card": "c1"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "negate_effect",
+                "effect": "chain.last"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "sent_to_grave",
+            "card_filter": {
+              "type": "monster"
+            },
+            "cause_card": "penguin_003"
+          }
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "add_to_hand",
+                "card": "self",
+                "from": "grave"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "penguin_010",
+    "name": "각성의 펭귄 군단",
+    "type": "spell",
+    "deck": "key",
+    "tags": [
+      "펭귄"
+    ],
+    "fetch": {
+      "condition": null
+    },
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "both",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "repeat": {
+              "min": 1,
+              "max": null,
+              "continue": "ask_each_loop",
+              "on_fail": "end_repeat",
+              "body": [
+                {
+                  "group": 1,
+                  "apply": "simultaneous",
+                  "allow_partial": false,
+                  "steps": [
+                    {
+                      "type": "select",
+                      "id": "s1",
+                      "from": "hand",
+                      "chooser": "self",
+                      "count": 1
+                    },
+                    {
+                      "type": "select",
+                      "id": "s2",
+                      "from": "opponent_field",
+                      "filter": {
+                        "type": "monster"
+                      },
+                      "chooser": "self",
+                      "count": 1
+                    },
+                    {
+                      "type": "discard",
+                      "card": "s1"
+                    },
+                    {
+                      "type": "send_to_grave",
+                      "card": "s2"
+                    }
+                  ]
+                },
+                {
+                  "group": 2,
+                  "apply": "sequential",
+                  "on_prev_fail": "stop",
+                  "allow_partial": false,
+                  "steps": [
+                    {
+                      "type": "select",
+                      "id": "s3",
+                      "from": "grave",
+                      "filter": {
+                        "type": "monster",
+                        "tag": "펭귄"
+                      },
+                      "count": 1
+                    },
+                    {
+                      "type": "summon",
+                      "card": "s3"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "limit": null
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "sent_to_grave",
+            "card_filter": {
+              "type": "monster",
+              "tag": "펭귄",
+              "owner": "self"
+            },
+            "cause_card": "penguin_003"
+          }
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "add_to_hand",
+                "card": "self",
+                "from": "grave"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "penguin_011",
+    "name": "평화의 펭귄",
+    "type": "spell",
+    "deck": "key",
+    "tags": [
+      "펭귄"
+    ],
+    "fetch": {
+      "condition": null
+    },
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "effect_activated",
+            "by": "opponent",
+            "effect_filter": null
+          }
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            }
+          ],
+          "isTargeting": true,
+          "targets": [
+            {
+              "kind": "card",
+              "id": "t1",
+              "from": "opponent_field",
+              "filter": {
+                "type": "monster"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "modify_attack",
+                "scope": "own_field",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "amount": {
+                  "op": "half_ceil",
+                  "of": {
+                    "card": "t1",
+                    "stat": "attack"
+                  }
+                },
+                "duration": "permanent"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "both",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "banish",
+              "card": "self",
+              "from": "grave"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "name": "펭귄 마을"
+                },
+                "count": 1
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s2",
+                "from": "hand",
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "discard",
+                "card": "s2"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "penguin_012",
+    "name": "펭귄이여 영원하라",
+    "type": "spell",
+    "deck": "main",
+    "tags": [
+      "펭귄"
+    ],
+    "name_alias": [
+      {
+        "locations": [
+          "grave",
+          "banished"
+        ],
+        "as": "펭귄의 영광"
+      }
+    ],
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "both",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            }
+          ],
+          "isTargeting": true,
+          "targets": [
+            {
+              "kind": "card",
+              "id": "t1",
+              "from": "own_field",
+              "count": 1
+            },
+            {
+              "kind": "card",
+              "id": "t2",
+              "from": "opponent_field",
+              "count": 1
+            }
+          ]
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "return_to_hand",
+                "card": "t1"
+              },
+              {
+                "type": "return_to_hand",
+                "card": "t2"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "optional": true,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "opponent",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "banish",
+              "card": "self",
+              "from": "grave"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": null
+      }
+    ]
+  },
+  {
+    "id": "penguin_013",
+    "name": "펭귄의 전설",
+    "type": "monster",
+    "deck": "key",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 5,
+    "name_alias": [
+      {
+        "locations": [
+          "hand"
+        ],
+        "as": "펭귄 용사"
+      }
+    ],
+    "fetch": {
+      "condition": {
+        "own_field": {
+          "has": "monster"
+        }
+      }
+    },
+    "summon_restriction": {
+      "only_by_effects_of": [
+        {
+          "name": "펭귄의 영광"
+        }
+      ]
+    },
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "summoned",
+            "card": "self",
+            "from": null
+          }
+        },
+        "condition": null,
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "grave",
+                "filter": {
+                  "name": "꼬마 펭귄"
+                },
+                "count": {
+                  "max": 2
+                }
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "opponent",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "field"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "return_to_hand",
+                "card": "self"
+              },
+              {
+                "type": "select",
+                "id": "s1",
+                "from": [
+                  "grave",
+                  "banished"
+                ],
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e3",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": null
+        },
+        "condition": {
+          "card_location": "field"
+        },
+        "continuous": {
+          "type": "immunity",
+          "from": "opponent_card_effects",
+          "except": "targeting_this_card"
+        },
+        "limit": null
+      }
+    ]
+  },
+  {
+    "id": "penguin_014",
+    "name": "펭귄 마법사",
+    "type": "monster",
+    "deck": "main",
+    "tags": [
+      "펭귄"
+    ],
+    "attack": 3,
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand_hidden"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": false
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "deck",
+                "filter": {
+                  "tag": "펭귄"
+                },
+                "count": 1
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              }
+            ]
+          },
+          {
+            "group": 2,
+            "apply": "sequential",
+            "on_prev_fail": "stop",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "return_to_deck",
+                "card": "self"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 2
+        }
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "summoned",
+            "card": "self",
+            "from": null
+          }
+        },
+        "condition": null,
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "hand",
+                "chooser": "self",
+                "count": {
+                  "min": 1,
+                  "max": 3
+                }
+              },
+              {
+                "type": "discard",
+                "card": "s1"
+              },
+              {
+                "type": "select",
+                "id": "s2",
+                "from": "opponent_field",
+                "filter": {
+                  "type": "monster"
+                },
+                "chooser": "self",
+                "count": {
+                  "min": 1,
+                  "max": {
+                    "count_of": "s1"
+                  }
+                }
+              },
+              {
+                "type": "banish",
+                "card": "s2"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 2
+        }
+      },
+      {
+        "id": "e3",
+        "timing": {
+          "turn": null,
+          "phase": null,
+          "event": {
+            "type": "sent_to_grave",
+            "card_filter": {
+              "type": "monster"
+            },
+            "cause_card": "penguin_003"
+          }
+        },
+        "condition": {
+          "card_location": "field"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "banished_both",
+                "filter": {
+                  "type": "monster"
+                },
+                "chooser": "self",
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "s1",
+                "field": "self"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "penguin_015",
+    "name": "연대의 펭귄",
+    "type": "spell",
+    "deck": "key",
+    "tags": [
+      "펭귄"
+    ],
+    "fetch": {
+      "condition": null
+    },
+    "effects": [
+      {
+        "id": "e1",
+        "timing": {
+          "turn": "both",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "hand"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "reveal",
+              "card": "self",
+              "from": "hand",
+              "only_if_hidden": true
+            },
+            {
+              "type": "select",
+              "id": "c1",
+              "from": "hand",
+              "chooser": "self",
+              "exclude": [
+                "self"
+              ],
+              "count": 1
+            },
+            {
+              "type": "discard",
+              "card": "c1"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "draw",
+                "player": "self",
+                "count": {
+                  "min": 1,
+                  "max": {
+                    "op": "sub",
+                    "a": {
+                      "effect_applied_count": {
+                        "card_id": "penguin_003",
+                        "effect": "e2",
+                        "scope": "this_turn"
+                      }
+                    },
+                    "b": 3
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "limit": null
+      },
+      {
+        "id": "e2",
+        "timing": {
+          "turn": "both",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "grave"
+        },
+        "cost": {
+          "pay": [
+            {
+              "type": "banish",
+              "card": "self",
+              "from": "grave"
+            }
+          ],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "group": 1,
+            "apply": "simultaneous",
+            "allow_partial": false,
+            "steps": [
+              {
+                "type": "select",
+                "id": "s1",
+                "from": "grave",
+                "filter": {
+                  "type": "monster",
+                  "tag": "펭귄",
+                  "sent_to_grave_by": "penguin_003:e2",
+                  "scope": "this_turn"
+                },
+                "count": "all_possible",
+                "unique_by_name": true
+              },
+              {
+                "type": "add_to_hand",
+                "card": "s1"
+              }
+            ]
+          }
+        ],
+        "limit": {
+          "scope": "turn",
+          "count": 1
+        }
+      },
+      {
+        "id": "e3",
+        "timing": {
+          "turn": "both",
+          "phase": "all",
+          "event": null
+        },
+        "condition": {
+          "card_location": "banished"
+        },
+        "cost": {
+          "pay": [],
+          "isTargeting": false,
+          "targets": []
+        },
+        "action": [
+          {
+            "repeat": {
+              "rounds": {
+                "stat": "draws_this_turn",
+                "player": "self"
+              },
+              "per_player": true,
+              "player_order": [
+                "self",
+                "opponent"
+              ],
+              "on_fail": "end_repeat",
+              "body": [
+                {
+                  "group": 1,
+                  "apply": "simultaneous",
+                  "allow_partial": false,
+                  "steps": [
+                    {
+                      "type": "select",
+                      "id": "s1",
+                      "player": "current",
+                      "from": "hand",
+                      "chooser": "current",
+                      "count": 1
+                    },
+                    {
+                      "type": "discard",
+                      "card": "s1"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "limit": {
+          "scope": "game",
+          "count": 1
+        }
+      }
+    ]
+  }
+]

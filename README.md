@@ -1,6 +1,6 @@
 # Hand Battle
 
-Hand Battle is being rebuilt as an Android online 1v1 card game. The old web client and card effects are not part of this codebase.
+Hand Battle is an Android online 1v1 card game. The old web client is not part of this codebase; card definitions and a server-side JavaScript effect engine now power online matches.
 
 ## Online game direction
 
@@ -18,7 +18,7 @@ Hand Battle is being rebuilt as an Android online 1v1 card game. The old web cli
 - **Security:** the Worker verifies the Firebase ID token. Clients send commands and receive filtered snapshots; they never write canonical game state.
 - **Billing:** no Firebase Cloud Functions, Firebase Realtime Database, or paid Cloudflare plan for the MVP. Cloudflare Free has hard quotas; when a quota is reached, requests fail until it resets instead of automatically becoming paid usage.
 
-The server in [`server/`](server/) handles room creation, joining, leaving, seat-token reconnection, ready state, and filtered WebSocket lobby snapshots. The Android app includes a live pre-match lobby with ready-state updates and reconnect support. The Worker is deployed at `https://handbattle-game-server.simsy0924.workers.dev`. Finish the Firebase Console setup in [`Firebase setup`](docs/FIREBASE_SETUP.md) and add the Android config file before testing sign-in.
+The server in [`server/`](server/) handles room creation, joining, leaving, seat-token reconnection, match state, card effects, and filtered WebSocket snapshots. When both players are ready, the Worker starts a duel. The Android app includes the live lobby and duel screen. The Worker is deployed at `https://handbattle-game-server.simsy0924.workers.dev`. Finish the Firebase Console setup in [`Firebase setup`](docs/FIREBASE_SETUP.md) and add the Android config file before testing sign-in.
 
 ## Game rules currently recorded
 
@@ -27,6 +27,9 @@ The server in [`server/`](server/) handles room creation, joining, leaving, seat
 - The second player draws at the start of their first turn.
 - Win by reducing the opponent's hand to zero cards.
 - Display text is kept separate from executable effect data.
+- Each player can edit and save a deck on their device. The main deck must contain 40–60 cards with up to four copies of a card; the key-card deck allows one copy of each selected key card.
+- The editor starts with the former 54-card starter list and all available key cards selected. Both players bring their own saved lists into a match.
+- The editor displays the supplied Korean card text separately from executable effect data.
 
 ## Build
 
@@ -48,11 +51,16 @@ The app uses Firebase project `cardgame-1b151`, which must match the project ID 
 ```text
 app/src/main/java/com/simsy/handbattle/
   MainActivity.kt
+  DuelScreen.kt
   game/CardRules.kt
+  online/RoomApi.kt
   online/RoomCode.kt
 server/
   src/index.js
   src/room.js
+  src/duel.js
+  src/engine.mjs
+  src/cards/
   src/firebase-auth.js
   test/
 ```
