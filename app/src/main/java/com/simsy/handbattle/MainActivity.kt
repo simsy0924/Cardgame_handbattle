@@ -41,7 +41,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.lifecycleScope
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
@@ -145,11 +145,10 @@ class MainActivity : ComponentActivity() {
         isBusy = true
         lifecycleScope.launch {
             try {
-                val googleOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(googleClientId)
-                    .setAutoSelectEnabled(false)
-                    .build()
+                // This is a button-triggered login, so use the explicit Google sign-in
+                // option. It also avoids a Credential Manager bottom-sheet issue seen on
+                // some Android devices with multiple Google accounts.
+                val googleOption = GetSignInWithGoogleOption.Builder(googleClientId).build()
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(googleOption)
                     .build()
@@ -170,12 +169,22 @@ class MainActivity : ComponentActivity() {
                             roomSession = null
                             statusMessage = "Google 로그인에 성공했습니다. 새 방을 만들거나 초대 코드로 참가하세요."
                         } else {
-                            statusMessage = "Firebase 로그인에 실패했습니다. Google 제공자와 SHA-1 설정을 확인하세요."
+                            val detail = task.exception?.localizedMessage
+                            statusMessage = if (detail.isNullOrBlank()) {
+                                "Firebase 로그인에 실패했습니다. Google 제공자와 SHA-1 설정을 확인하세요."
+                            } else {
+                                "Firebase 로그인 실패: $detail (Google 제공자와 SHA-1 설정도 확인하세요.)"
+                            }
                         }
                     }
             } catch (error: GetCredentialException) {
                 isBusy = false
-                statusMessage = "Google 로그인이 완료되지 않았습니다. 계정을 선택했는지 확인하세요."
+                val detail = error.localizedMessage
+                statusMessage = if (detail.isNullOrBlank()) {
+                    "Google 계정 선택 화면을 열지 못했습니다 (${error.javaClass.simpleName}). Google Play 서비스와 휴대폰 계정 설정을 확인하세요."
+                } else {
+                    "Google 계정 선택 화면을 열지 못했습니다 (${error.javaClass.simpleName}): $detail"
+                }
             } catch (error: Exception) {
                 isBusy = false
                 statusMessage = error.localizedMessage ?: "Google 로그인 중 오류가 발생했습니다."
