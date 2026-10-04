@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "179779519297-frl3k3e5u3071nrrkgn97pduvlivf30k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.simsy.handbattle",
+            "certificate_hash": "5a0f17a97b3e6a15db23d077f0f807bab275af0e"
+          }
+        },
+        {
           "client_id": "179779519297-0j59m1hjln0dg0qcb8phn5uqlglcbogv.apps.googleusercontent.com",
           "client_type": 3
         }
