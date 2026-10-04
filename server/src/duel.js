@@ -5,7 +5,7 @@ import penguinDeck from "./cards/penguin_deck.json" with { type: "json" };
 const PLAYERS = ["A", "B"];
 const FIRST_OPENING_HAND_SIZE = 6;
 const SECOND_OPENING_HAND_SIZE = 7;
-const MAIN_COPIES = 3;
+const MAIN_COPIES = 4;
 const KEY_DECK_MAX = 10;
 const FIELD_MAX = 5;
 
@@ -183,7 +183,6 @@ export function createDuel(decks = [defaultPlayerDeck(), defaultPlayerDeck()]) {
   return {
     state: engine.state,
     rngState: engine.rngState,
-    normalSummonUsed: { A: false, B: false },
     pending: null,
     winnerSeat: null,
     finished: false,
@@ -245,21 +244,8 @@ function requireActiveTurn(engine, seat, phase = null) {
 function applyCommand(engine, game, seat, command) {
   const player = seatPlayer(seat);
   switch (command.type) {
-    case "normal_summon": {
-      requireActiveTurn(engine, seat, "deploy");
-      const card = engine.state.cards[command.uid];
-      const definition = card && engine.def(command.uid);
-      if (!card || card.owner !== player || card.zone !== "hand" || definition.type !== "monster" ||
-          definition.deck !== "main" || definition.summon_restriction || game.normalSummonUsed[player] ||
-          engine.state.players[player].field.length >= FIELD_MAX) {
-        throw new DuelRuleError("invalid_summon", "이 카드는 지금 일반 소환할 수 없습니다.");
-      }
-      engine.moveCard(command.uid, "field");
-      engine.emit({ type: "summoned", uid: command.uid, from: "hand", player });
-      game.normalSummonUsed[player] = true;
-      engine.processTriggers();
-      return;
-    }
+    case "normal_summon":
+      throw new DuelRuleError("invalid_action", "이 게임에는 일반 소환이 없습니다. 몬스터는 카드 효과나 키 카드 소환 절차로만 소환할 수 있습니다.");
     case "activate": {
       requireActiveTurn(engine, seat);
       const allowed = engine.activatableIgnitions(player).some((option) =>
@@ -302,7 +288,6 @@ function applyCommand(engine, game, seat, command) {
       } else if (engine.state.turn.phase === "end") {
         const nextPlayer = OTHER(player);
         engine.startTurn(nextPlayer);
-        game.normalSummonUsed[nextPlayer] = false;
       } else {
         throw new DuelRuleError("wrong_phase", "다음 단계로 이동할 수 없습니다.");
       }
@@ -350,7 +335,6 @@ export function executeDuelCommand(game, seat, command) {
     if (!(error instanceof InputRequired)) throw error;
     working.state = structuredClone(baseState);
     working.rngState = baseRngState;
-    working.normalSummonUsed = structuredClone(game.normalSummonUsed);
     working.pending = {
       command: structuredClone(action),
       initiatorSeat,
@@ -379,10 +363,11 @@ export function executeDuelCommand(game, seat, command) {
 function cardView(engine, uid, viewer) {
   const card = engine.state.cards[uid];
   const hidden = card.zone === "hand" && card.owner !== viewer && !card.revealed;
-  if (hidden) return { hidden: true, name: null, uid: null, type: null, attack: null, bonus: 0 };
+  if (hidden) return { hidden: true, revealed: false, id: null, name: null, uid: null, type: null, attack: null, bonus: 0 };
   const definition = engine.def(uid);
   return {
     uid,
+    id: definition.id,
     name: engine.effectiveName(uid),
     type: definition.type,
     attack: definition.attack ?? null,
@@ -456,15 +441,6 @@ function availableActions(engine, game, seat) {
   const actions = [];
 
   if (phase === "deploy") {
-    if (!game.normalSummonUsed[player] && engine.state.players[player].field.length < FIELD_MAX) {
-      for (const uid of engine.state.players[player].hand) {
-        const card = engine.state.cards[uid];
-        const definition = engine.def(uid);
-        if (definition.type === "monster" && definition.deck === "main" && !definition.summon_restriction) {
-          actions.push({ type: "normal_summon", uid, label: `${definition.name} 일반 소환` });
-        }
-      }
-    }
     for (const uid of engine.state.players[player].keydeck) {
       if (engine.canKeySummon(player, uid)) {
         actions.push({ type: "key_summon", uid, label: `${engine.def(uid).name} 키 소환` });
