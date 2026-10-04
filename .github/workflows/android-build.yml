@@ -58,7 +58,8 @@ jobs:
         run: gradle :app:testDebugUnitTest :app:assembleDebug
 
       - name: Verify APK signature
-        run: "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
+        run: |
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v5
