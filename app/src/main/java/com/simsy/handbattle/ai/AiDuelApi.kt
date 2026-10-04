@@ -29,6 +29,7 @@ data class AiDuelMatch(
     val aiName: String,
     val revision: Long,
     val snapshot: DuelSnapshot,
+    val aiToolSeen: Boolean = false,
 )
 
 object AiDuelDeckParser {
@@ -160,6 +161,7 @@ object AiDuelApi {
             aiName = response.optString("aiName").takeIf { it.isNotBlank() } ?: "AI",
             revision = response.optLong("revision", 0),
             snapshot = RoomApi.parseDuelSnapshot(snapshot),
+            aiToolSeen = response.optBoolean("aiToolSeen", false),
         )
     }
 
