@@ -18,7 +18,7 @@ Hand Battle is being rebuilt as an Android online 1v1 card game. The old web cli
 - **Security:** the Worker verifies the Firebase ID token. Clients send commands and receive filtered snapshots; they never write canonical game state.
 - **Billing:** no Firebase Cloud Functions, Firebase Realtime Database, or paid Cloudflare plan for the MVP. Cloudflare Free has hard quotas; when a quota is reached, requests fail until it resets instead of automatically becoming paid usage.
 
-The first server slice is implemented in [`server/`](server/): room creation, second-seat joining, seat-token reconnection, ready state, and filtered WebSocket lobby snapshots. The server is not deployed and the Android UI is not connected yet; both lobby buttons remain disabled until Firebase Google sign-in is configured and a Worker URL is available.
+The first server slice is implemented in [`server/`](server/): room creation, second-seat joining, seat-token reconnection, ready state, and filtered WebSocket lobby snapshots. The Worker is deployed at `https://handbattle-game-server.simsy0924.workers.dev`. The Android app now has Google sign-in and room create/join requests; finish the Firebase Console setup in [`Firebase setup`](docs/FIREBASE_SETUP.md) and add the Android config file before testing sign-in.
 
 ## Game rules currently recorded
 
@@ -38,6 +38,10 @@ gradle :app:assembleDebug
 ```
 
 GitHub Actions runs unit tests and builds a debug APK on pushes and pull requests.
+
+## Firebase Android setup
+
+The app uses Firebase project `cardgame-1b151`, which must match the project ID configured on the Worker. Follow [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md) to register `com.simsy.handbattle`, enable Google sign-in, add the signing certificate SHA-1, and place `google-services.json` in `app/`.
 
 ## Source layout
 
