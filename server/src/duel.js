@@ -6,6 +6,7 @@ const PLAYERS = ["A", "B"];
 const FIRST_OPENING_HAND_SIZE = 6;
 const SECOND_OPENING_HAND_SIZE = 7;
 const MAIN_COPIES = 3;
+const KEY_DECK_MAX = 10;
 const FIELD_MAX = 5;
 
 export const CARD_DEFINITIONS = [...genericDeck.cards, ...penguinDeck];
@@ -24,7 +25,7 @@ export function defaultPlayerDeck() {
     main: CARD_DEFINITIONS.filter((card) => card.deck === "main").flatMap((card) =>
       Array.from({ length: 3 }, () => card.id),
     ),
-    key: CARD_DEFINITIONS.filter((card) => card.deck === "key").map((card) => card.id),
+    key: CARD_DEFINITIONS.filter((card) => card.deck === "key").slice(0, KEY_DECK_MAX).map((card) => card.id),
   };
 }
 
@@ -35,6 +36,9 @@ export function validatePlayerDeck(deck) {
   }
   if (deck.main.length < 40 || deck.main.length > 60) {
     throw new DuelRuleError("invalid_deck", `메인 덱은 40~60장이어야 합니다. (현재 ${deck.main.length}장)`);
+  }
+  if (deck.key.length > KEY_DECK_MAX) {
+    throw new DuelRuleError("invalid_deck", `키 카드 덱은 최대 ${KEY_DECK_MAX}장까지 넣을 수 있습니다. (현재 ${deck.key.length}장)`);
   }
 
   const definitions = new Map(CARD_DEFINITIONS.map((card) => [card.id, card]));

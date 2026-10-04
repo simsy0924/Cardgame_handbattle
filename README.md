@@ -27,8 +27,8 @@ The server in [`server/`](server/) handles room creation, joining, leaving, seat
 - The second player draws at the start of their first turn.
 - Win by reducing the opponent's hand to zero cards.
 - Display text is kept separate from executable effect data.
-- Each player can edit and save a deck on their device. The main deck must contain 40–60 cards with up to four copies of a card; the key-card deck allows one copy of each selected key card.
-- The editor starts with the former 54-card starter list and all available key cards selected. Both players bring their own saved lists into a match.
+- Each player can edit and save a deck on their device. The main deck must contain 40–60 cards with up to four copies of a card; the key-card deck allows up to 10 cards with one copy of each selected key card.
+- The editor starts with the former 54-card starter list and 10 key cards selected. Both players bring their own saved lists into a match.
 - The editor displays the supplied Korean card text separately from executable effect data.
 
 ## Build

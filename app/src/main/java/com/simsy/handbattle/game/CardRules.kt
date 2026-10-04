@@ -53,6 +53,7 @@ data class DeckList(
 sealed interface DeckIssue {
     data class MainDeckSize(val actual: Int) : DeckIssue
     data class TooManyCopies(val cardId: String, val count: Int) : DeckIssue
+    data class KeyDeckSize(val actual: Int) : DeckIssue
     data class DuplicateKeyCard(val cardId: String) : DeckIssue
 }
 
@@ -60,6 +61,7 @@ object HandBattleRules {
     const val MAIN_DECK_MIN = 40
     const val MAIN_DECK_MAX = 60
     const val COPIES_PER_CARD_MAX = 4
+    const val KEY_DECK_MAX = 10
     const val FIRST_PLAYER_OPENING_HAND = 6
     const val SECOND_PLAYER_OPENING_HAND = 7
     const val WINNING_OPPONENT_HAND_SIZE = 0
@@ -69,6 +71,9 @@ object HandBattleRules {
     fun validateDeck(deck: DeckList): List<DeckIssue> = buildList {
         if (deck.mainDeck.size !in MAIN_DECK_MIN..MAIN_DECK_MAX) {
             add(DeckIssue.MainDeckSize(deck.mainDeck.size))
+        }
+        if (deck.keyDeck.size > KEY_DECK_MAX) {
+            add(DeckIssue.KeyDeckSize(deck.keyDeck.size))
         }
 
         deck.mainDeck.groupingBy(CardDefinition::id).eachCount().forEach { (cardId, count) ->

@@ -261,6 +261,26 @@ describe("online room API", () => {
     assert.equal(state.room.players[0].ready, false);
   });
 
+  it("rejects a deck with more than ten key cards", async () => {
+    const { worker, env } = setup();
+    const created = await json(await worker.fetch(apiRequest("/v1/rooms", {
+      method: "POST",
+      body: {},
+    }), env));
+    const mainIds = CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 10).map((card) => card.id);
+    const keyIds = CARD_DEFINITIONS.filter((card) => card.deck === "key").map((card) => card.id);
+    assert.equal(keyIds.length > 10, true);
+    const response = await worker.fetch(apiRequest(`/v1/rooms/${created.roomCode}/ready`, {
+      method: "POST",
+      seatToken: created.seatToken,
+      body: { ready: true, deck: { main: mainIds.flatMap((id) => Array(4).fill(id)), key: keyIds } },
+    }), env);
+    const result = await json(response);
+    assert.equal(response.status, 400);
+    assert.equal(result.error, "invalid_deck");
+    assert.equal(result.message.includes("최대 10장"), true);
+  });
+
   it("lets a player leave and releases that seat for the next opponent", async () => {
     const { worker, env } = setup();
     const created = await json(await worker.fetch(apiRequest("/v1/rooms", {

@@ -30,11 +30,13 @@ class HandBattleRulesTest {
     }
 
     @Test
-    fun keyDeckAllowsAnyNumberOfUniqueCardsButOnlyOneCopyOfEach() {
-        val manyUnique = DeckList(mainDeck = List(40) { card("main-$it") }, keyDeck = List(11) { card("key-$it") })
+    fun keyDeckAllowsTenUniqueCardsButOnlyOneCopyOfEach() {
+        val maxSize = DeckList(mainDeck = List(40) { card("main-$it") }, keyDeck = List(10) { card("key-$it") })
+        val tooMany = DeckList(mainDeck = List(40) { card("main-$it") }, keyDeck = List(11) { card("key-$it") })
         val duplicate = DeckList(mainDeck = List(40) { card("main-$it") }, keyDeck = listOf(card("key"), card("key")))
 
-        assertTrue(HandBattleRules.validateDeck(manyUnique).isEmpty())
+        assertTrue(HandBattleRules.validateDeck(maxSize).isEmpty())
+        assertTrue(HandBattleRules.validateDeck(tooMany).contains(DeckIssue.KeyDeckSize(11)))
         assertTrue(HandBattleRules.validateDeck(duplicate).contains(DeckIssue.DuplicateKeyCard("key")))
     }
 

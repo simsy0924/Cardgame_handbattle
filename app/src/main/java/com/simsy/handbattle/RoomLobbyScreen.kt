@@ -118,7 +118,7 @@ fun RoomLobbyScreen(
             )
             if (!deckLegal) {
                 Text(
-                    text = "메인 덱 40~60장, 메인 카드별 최대 4장, 키 카드별 최대 1장이어야 합니다.",
+                    text = "메인 덱 40~60장, 메인 카드별 최대 4장, 키 카드 덱 최대 10장(카드별 최대 1장)이어야 합니다.",
                     color = Color(0xFFFFB4AB),
                     fontSize = 11.sp,
                 )

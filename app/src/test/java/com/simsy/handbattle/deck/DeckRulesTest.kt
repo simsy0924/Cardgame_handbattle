@@ -12,11 +12,11 @@ class DeckRulesTest {
     }
 
     @Test
-    fun defaultDeckUsesThreeCopiesOfEachMainCardAndOneOfEachKeyCard() {
+    fun defaultDeckUsesThreeCopiesOfEachMainCardAndTenKeyCards() {
         val deck = DeckRules.starterDeck(cards)
 
         assertEquals(54, deck.main.size)
-        assertEquals(11, deck.key.size)
+        assertEquals(10, deck.key.size)
         assertTrue(DeckRules.validate(deck, cards).isEmpty())
     }
 
@@ -32,10 +32,11 @@ class DeckRulesTest {
     }
 
     @Test
-    fun keyDeckAllowsAnyNumberOfDifferentCardsButOnlyOneCopyOfEach() {
+    fun keyDeckAllowsUpToTenDifferentCardsAndOnlyOneCopyOfEach() {
         val keys = cards.filter { it.deck == "key" }.map { it.id }
 
-        assertTrue(DeckRules.validate(PlayerDeck(List(40) { "main-${it % 10}" }, keys), cards).isEmpty())
+        assertTrue(DeckRules.validate(PlayerDeck(List(40) { "main-${it % 10}" }, keys.take(10)), cards).isEmpty())
+        assertFalse(DeckRules.validate(PlayerDeck(List(40) { "main-${it % 10}" }, keys), cards).isEmpty())
         assertFalse(DeckRules.validate(PlayerDeck(List(40) { "main-${it % 10}" }, keys + keys.first()), cards).isEmpty())
     }
 
