@@ -86,8 +86,10 @@ class MainActivity : ComponentActivity() {
     private var statusMessage by mutableStateOf("")
     private var isBusy by mutableStateOf(false)
     private var isDeckEditorOpen by mutableStateOf(false)
+    private var isAiDeckEditorOpen by mutableStateOf(false)
     private var isAiDuelSetupOpen by mutableStateOf(false)
     private var playerDeck by mutableStateOf(PlayerDeck(emptyList(), emptyList()))
+    private var aiDuelDeck by mutableStateOf<AiDuelDeck?>(null)
     private var aiDuelSession by mutableStateOf<AiDuelSession?>(null)
     private var aiDuelMatch by mutableStateOf<AiDuelMatch?>(null)
     private var aiDuelConnectionStatus by mutableStateOf("연결 안 됨")
@@ -110,6 +112,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         roomSession = roomSessionStore.load()
         aiDuelSession = aiDuelStore.load()
+        aiDuelDeck = aiDuelStore.loadDeck()
         if (aiDuelSession != null) aiDuelConnectionStatus = "대전 상태 불러오는 중…"
         playerDeck = deckStore.load(deckCardCatalog)
         if (roomSession != null) roomConnectionStatus = "대기실 연결 복구 중…"
@@ -125,6 +128,14 @@ class MainActivity : ComponentActivity() {
                             initialDeck = playerDeck,
                             onSave = ::saveDeck,
                             onCancel = { isDeckEditorOpen = false },
+                        )
+                    } else if (isAiDeckEditorOpen) {
+                        DeckEditorScreen(
+                            cards = deckCardCatalog,
+                            initialDeck = aiDuelDeck?.cards ?: PlayerDeck(emptyList(), emptyList()),
+                            onSave = ::saveAiDuelDeck,
+                            onCancel = { isAiDeckEditorOpen = false },
+                            title = "AI 덱 편집",
                         )
                     } else if (activeRoomSession != null) {
                         val activeSnapshot = roomSnapshot
@@ -172,12 +183,14 @@ class MainActivity : ComponentActivity() {
                         AiDuelSetupScreen(
                             cards = deckCardCatalog,
                             humanDeck = playerDeck,
+                            aiDeck = aiDuelDeck,
                             isBusy = aiDuelBusy,
                             statusMessage = aiDuelStatusMessage,
                             onBack = {
                                 isAiDuelSetupOpen = false
                                 aiDuelStatusMessage = ""
                             },
+                            onEditAiDeck = { isAiDeckEditorOpen = true },
                             onStart = ::startAiDuel,
                         )
                     } else {
@@ -348,6 +361,14 @@ class MainActivity : ComponentActivity() {
         } else {
             "덱을 저장했습니다. 대전 준비 전에 메인 덱을 40~60장으로 맞춰 주세요."
         }
+    }
+
+    private fun saveAiDuelDeck(deck: PlayerDeck) {
+        val savedDeck = AiDuelDeck(name = "내 AI 덱", cards = deck)
+        aiDuelDeck = savedDeck
+        aiDuelStore.saveDeck(savedDeck)
+        isAiDeckEditorOpen = false
+        aiDuelStatusMessage = ""
     }
 
     private fun deckSummary(): String = "메인 ${playerDeck.main.size}장 · 키 카드 ${playerDeck.key.size}장"
