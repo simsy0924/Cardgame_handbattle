@@ -19,6 +19,50 @@ export class DuelRuleError extends Error {
   }
 }
 
+export function defaultPlayerDeck() {
+  return {
+    main: CARD_DEFINITIONS.filter((card) => card.deck === "main").flatMap((card) =>
+      Array.from({ length: 3 }, () => card.id),
+    ),
+    key: CARD_DEFINITIONS.filter((card) => card.deck === "key").map((card) => card.id),
+  };
+}
+
+export function validatePlayerDeck(deck) {
+  if (!deck || typeof deck !== "object" || Array.isArray(deck) ||
+      !Array.isArray(deck.main) || !Array.isArray(deck.key)) {
+    throw new DuelRuleError("invalid_deck", "메인 덱과 키 카드 덱 목록을 확인하세요.");
+  }
+  if (deck.main.length < 40 || deck.main.length > 60) {
+    throw new DuelRuleError("invalid_deck", `메인 덱은 40~60장이어야 합니다. (현재 ${deck.main.length}장)`);
+  }
+
+  const definitions = new Map(CARD_DEFINITIONS.map((card) => [card.id, card]));
+  const mainCounts = new Map();
+  for (const id of deck.main) {
+    if (typeof id !== "string" || definitions.get(id)?.deck !== "main") {
+      throw new DuelRuleError("invalid_deck", "메인 덱에 메인 카드가 아닌 카드가 포함되어 있습니다.");
+    }
+    mainCounts.set(id, (mainCounts.get(id) ?? 0) + 1);
+    if (mainCounts.get(id) > 4) {
+      throw new DuelRuleError("invalid_deck", `메인 덱에는 같은 카드를 최대 4장 넣을 수 있습니다. (${definitions.get(id).name})`);
+    }
+  }
+
+  const keyIds = new Set();
+  for (const id of deck.key) {
+    if (typeof id !== "string" || definitions.get(id)?.deck !== "key") {
+      throw new DuelRuleError("invalid_deck", "키 카드 덱에 키 카드가 아닌 카드가 포함되어 있습니다.");
+    }
+    if (keyIds.has(id)) {
+      throw new DuelRuleError("invalid_deck", `키 카드 덱에는 같은 카드를 1장만 넣을 수 있습니다. (${definitions.get(id).name})`);
+    }
+    keyIds.add(id);
+  }
+
+  return { main: [...deck.main], key: [...deck.key] };
+}
+
 class InputRequired extends Error {
   constructor(prompt) {
     super("A player choice is required");
@@ -108,17 +152,14 @@ function createEngine(seed, answers = []) {
   });
 }
 
-export function createDuel() {
+export function createDuel(decks = [defaultPlayerDeck(), defaultPlayerDeck()]) {
+  const playerDecks = PLAYERS.map((_, seat) => validatePlayerDeck(decks[seat] ?? defaultPlayerDeck()));
   const seed = randomSeed();
   const engine = createEngine(seed);
-  for (const player of PLAYERS) {
-    for (const card of CARD_DEFINITIONS) {
-      if (card.deck === "main") {
-        for (let copy = 0; copy < MAIN_COPIES; copy += 1) engine.addCard(card.id, player, "deck");
-      } else if (card.deck === "key") {
-        engine.addCard(card.id, player, "keydeck");
-      }
-    }
+  for (const [seat, player] of PLAYERS.entries()) {
+    const deck = playerDecks[seat];
+    for (const id of deck.main) engine.addCard(id, player, "deck");
+    for (const id of deck.key) engine.addCard(id, player, "keydeck");
     engine.shuffle(player);
   }
 
@@ -499,6 +540,6 @@ export function duelSnapshot(game, viewerSeat) {
     pendingChoice: choicePrompt(game, engine, viewerSeat),
     winnerSeat: game.winnerSeat,
     finished: game.finished,
-    format: "펭귄 + 범용 스타터 덱",
+    format: "사용자 덱 대전",
   };
 }

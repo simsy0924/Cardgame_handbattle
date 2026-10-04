@@ -164,7 +164,10 @@ export function createWorker(options = {}) {
         case "ready":
           if (request.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
           if (typeof body.ready !== "boolean") return jsonResponse({ error: "invalid_request" }, 400);
-          return forwardRoom(env, code, internalRequest("/_internal/ready", principal, { ready: body.ready }, "POST", seatToken));
+          return forwardRoom(env, code, internalRequest("/_internal/ready", principal, {
+            ready: body.ready,
+            ...(body.deck === undefined ? {} : { deck: body.deck }),
+          }, "POST", seatToken));
         case "action":
           if (request.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
           if (typeof body.type !== "string") return jsonResponse({ error: "invalid_request" }, 400);

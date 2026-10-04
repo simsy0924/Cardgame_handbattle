@@ -47,6 +47,10 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.simsy.handbattle.deck.DeckCardCatalog
+import com.simsy.handbattle.deck.DeckRules
+import com.simsy.handbattle.deck.DeckStore
+import com.simsy.handbattle.deck.PlayerDeck
 import com.simsy.handbattle.online.DuelActionRequest
 import com.simsy.handbattle.online.RoomApi
 import com.simsy.handbattle.online.RoomApiException
@@ -76,6 +80,8 @@ class MainActivity : ComponentActivity() {
     private var firebaseSetupMessage by mutableStateOf("")
     private var statusMessage by mutableStateOf("")
     private var isBusy by mutableStateOf(false)
+    private var isDeckEditorOpen by mutableStateOf(false)
+    private var playerDeck by mutableStateOf(PlayerDeck(emptyList(), emptyList()))
     private var roomSession by mutableStateOf<RoomSession?>(null)
     private var roomSnapshot by mutableStateOf<RoomSnapshot?>(null)
     private var roomConnectionStatus by mutableStateOf("연결 안 됨")
@@ -84,17 +90,27 @@ class MainActivity : ComponentActivity() {
     private var roomStream: WebSocket? = null
     private var roomStreamGeneration = 0
     private val roomSessionStore by lazy { RoomSessionStore(applicationContext) }
+    private val deckCardCatalog by lazy { DeckCardCatalog.load(applicationContext) }
+    private val deckStore by lazy { DeckStore(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         roomSession = roomSessionStore.load()
+        playerDeck = deckStore.load(deckCardCatalog)
         if (roomSession != null) roomConnectionStatus = "대기실 연결 복구 중…"
         configureFirebase()
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Background) {
                     val activeRoomSession = roomSession
-                    if (activeRoomSession != null) {
+                    if (isDeckEditorOpen) {
+                        DeckEditorScreen(
+                            cards = deckCardCatalog,
+                            initialDeck = playerDeck,
+                            onSave = ::saveDeck,
+                            onCancel = { isDeckEditorOpen = false },
+                        )
+                    } else if (activeRoomSession != null) {
                         val activeSnapshot = roomSnapshot
                         if (activeSnapshot != null &&
                             (activeSnapshot.phase == "playing" || activeSnapshot.phase == "finished")
@@ -116,8 +132,11 @@ class MainActivity : ComponentActivity() {
                                 statusMessage = statusMessage,
                                 isSignedIn = currentUser != null,
                                 isBusy = isBusy || roomActionBusy || isRoomConnecting,
+                                deckSummary = deckSummary(),
+                                deckLegal = DeckRules.validate(playerDeck, deckCardCatalog).isEmpty(),
                                 onSignIn = ::signInWithGoogle,
                                 onReadyChange = ::setReady,
+                                onEditDeck = ::openDeckEditor,
                                 onReconnect = ::reconnectRoom,
                                 onLeave = ::leaveRoom,
                             )
@@ -131,6 +150,8 @@ class MainActivity : ComponentActivity() {
                         firebaseSetupMessage = firebaseSetupMessage,
                         statusMessage = statusMessage,
                         roomSession = roomSession,
+                        deckSummary = deckSummary(),
+                        onEditDeck = ::openDeckEditor,
                         onSignIn = ::signInWithGoogle,
                         onSignOut = ::signOut,
                         onCreateRoom = ::createRoom,
@@ -271,6 +292,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun openDeckEditor() {
+        isDeckEditorOpen = true
+    }
+
+    private fun saveDeck(deck: PlayerDeck) {
+        playerDeck = deck
+        deckStore.save(deck)
+        isDeckEditorOpen = false
+        statusMessage = if (DeckRules.validate(deck, deckCardCatalog).isEmpty()) {
+            "덱을 저장했습니다."
+        } else {
+            "덱을 저장했습니다. 대전 준비 전에 메인 덱을 40~60장으로 맞춰 주세요."
+        }
+    }
+
+    private fun deckSummary(): String = "메인 ${playerDeck.main.size}장 · 키 카드 ${playerDeck.key.size}장"
+
     private fun createRoom() {
         performRoomRequest { idToken, displayName ->
             RoomApi.createRoom(BuildConfig.ROOM_SERVER_URL, idToken, displayName)
@@ -289,6 +327,14 @@ class MainActivity : ComponentActivity() {
 
     private fun setReady(ready: Boolean) {
         val session = roomSession ?: return
+        val deck = playerDeck
+        if (ready) {
+            val errors = DeckRules.validate(deck, deckCardCatalog)
+            if (errors.isNotEmpty()) {
+                statusMessage = errors.first()
+                return
+            }
+        }
         val user = firebaseAuth?.currentUser
         if (user == null) {
             statusMessage = "대기실에 연결하려면 Google 계정으로 로그인하세요."
@@ -307,7 +353,7 @@ class MainActivity : ComponentActivity() {
                 lifecycleScope.launch {
                     try {
                         val snapshot = withContext(Dispatchers.IO) {
-                            RoomApi.setReady(BuildConfig.ROOM_SERVER_URL, idToken, session, ready)
+                            RoomApi.setReady(BuildConfig.ROOM_SERVER_URL, idToken, session, ready, deck)
                         }
                         publishRoomSnapshot(snapshot)
                         statusMessage = ""
@@ -566,6 +612,8 @@ private fun OnlineStartScreen(
     firebaseSetupMessage: String,
     statusMessage: String,
     roomSession: RoomSession?,
+    deckSummary: String,
+    onEditDeck: () -> Unit,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onCreateRoom: () -> Unit,
@@ -646,6 +694,16 @@ private fun OnlineStartScreen(
                 ) {
                     Text("로그아웃", color = Color(0xFFCFD4DE), modifier = Modifier.padding(vertical = 5.dp))
                 }
+            }
+            Text(deckSummary, color = Accent, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Button(
+                onClick = onEditDeck,
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(disabledContainerColor = Color(0xFF343A46)),
+            ) {
+                Text("덱 편집", color = Color(0xFFCFD4DE), modifier = Modifier.padding(vertical = 5.dp))
             }
             OutlinedTextField(
                 value = roomCodeInput,

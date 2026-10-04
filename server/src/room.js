@@ -1,4 +1,11 @@
-import { createDuel, duelSnapshot, DuelRuleError, executeDuelCommand } from "./duel.js";
+import {
+  createDuel,
+  defaultPlayerDeck,
+  duelSnapshot,
+  DuelRuleError,
+  executeDuelCommand,
+  validatePlayerDeck,
+} from "./duel.js";
 
 const ROOM_KEY = "room";
 const ROOM_TTL_MS = 24 * 60 * 60 * 1_000;
@@ -161,6 +168,7 @@ export class Room {
             uid: principal.uid,
             displayName: cleanDisplayName(body.displayName, principal.displayName),
             ready: false,
+            deck: null,
             seatTokenHash: await hashSeatToken(seatToken),
           },
           null,
@@ -196,6 +204,7 @@ export class Room {
         uid: principal.uid,
         displayName: cleanDisplayName(body.displayName, principal.displayName),
         ready: false,
+        deck: null,
         seatTokenHash: await hashSeatToken(seatToken),
       };
       room.phase = readyPhase(room.players);
@@ -258,6 +267,18 @@ export class Room {
       if (room.phase === "playing" || room.phase === "finished") {
         return jsonResponse({ error: "game_started" }, 409);
       }
+      if (body.ready) {
+        try {
+          room.players[seat].deck = body.deck === undefined
+            ? room.players[seat].deck ?? defaultPlayerDeck()
+            : validatePlayerDeck(body.deck);
+        } catch (error) {
+          return jsonResponse({
+            error: "invalid_deck",
+            message: error instanceof Error ? error.message : "덱 구성을 확인하세요.",
+          }, 400);
+        }
+      }
       room.players[seat].ready = body.ready;
       this.startGameIfReady(room);
       room.sequence += 1;
@@ -312,7 +333,7 @@ export class Room {
 
   startGameIfReady(room) {
     if (room.players[0]?.ready && room.players[1]?.ready) {
-      room.game = createDuel();
+      room.game = createDuel(room.players.map((player) => player.deck ?? defaultPlayerDeck()));
       room.phase = "playing";
     } else {
       room.phase = readyPhase(room.players);
@@ -416,6 +437,7 @@ export class Room {
         return;
       }
       room.players[attachment.seat].ready = command.ready;
+      if (command.ready) room.players[attachment.seat].deck ??= defaultPlayerDeck();
       this.startGameIfReady(room);
       room.sequence += 1;
       room.lastActivityAt = Date.now();

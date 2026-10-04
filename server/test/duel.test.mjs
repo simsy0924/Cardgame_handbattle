@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CARD_DEFINITIONS, createDuel, duelSnapshot, executeDuelCommand } from "../src/duel.js";
+import {
+  CARD_DEFINITIONS,
+  createDuel,
+  defaultPlayerDeck,
+  duelSnapshot,
+  executeDuelCommand,
+  validatePlayerDeck,
+} from "../src/duel.js";
 import { Engine } from "../src/engine.mjs";
 
 const byName = Object.fromEntries(CARD_DEFINITIONS.map((card) => [card.name, card.id]));
@@ -28,6 +35,46 @@ test("starts with five cards, a shuffled shared starter deck, and a private oppo
   assert.equal(snapshot.players[0].hand.every((card) => !card.hidden && card.uid && card.name), true);
   assert.equal(game.state.turn.phase, "deploy");
   assert.equal(game.state.turn.number, 1);
+});
+
+test("accepts 40 to 60 main cards, at most four copies, and one copy of each key card", () => {
+  const mainIds = CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 10).map((card) => card.id);
+  const legalDeck = { main: mainIds.flatMap((id) => Array(4).fill(id)), key: defaultPlayerDeck().key.slice(0, 1) };
+  assert.equal(validatePlayerDeck(legalDeck).main.length, 40);
+  assert.throws(
+    () => validatePlayerDeck({ ...legalDeck, main: legalDeck.main.slice(1) }),
+    (error) => error.code === "invalid_deck",
+  );
+  assert.throws(
+    () => validatePlayerDeck({ ...legalDeck, main: [...legalDeck.main, mainIds[0]] }),
+    (error) => error.code === "invalid_deck",
+  );
+  assert.throws(
+    () => validatePlayerDeck({ ...legalDeck, key: [legalDeck.key[0], legalDeck.key[0]] }),
+    (error) => error.code === "invalid_deck",
+  );
+  assert.throws(
+    () => validatePlayerDeck({ ...legalDeck, main: [...legalDeck.main.slice(0, 39), defaultPlayerDeck().key[0]] }),
+    (error) => error.code === "invalid_deck",
+  );
+});
+
+test("creates each player's game zones from that player's submitted deck", () => {
+  const mainIds = CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 10).map((card) => card.id);
+  const customDeck = { main: mainIds.flatMap((id) => Array(4).fill(id)), key: defaultPlayerDeck().key.slice(0, 2) };
+  const game = createDuel([customDeck, defaultPlayerDeck()]);
+
+  for (const [seat, player] of ["A", "B"].entries()) {
+    const zones = game.state.players[player];
+    const allMain = [...zones.deck, ...zones.hand].map((uid) => game.state.cards[uid].id);
+    const expected = seat === 0 ? customDeck.main : defaultPlayerDeck().main;
+    assert.equal(allMain.length, expected.length);
+    for (const id of new Set(expected)) {
+      assert.equal(allMain.filter((cardId) => cardId === id).length, expected.filter((cardId) => cardId === id).length);
+    }
+    const expectedKeys = seat === 0 ? customDeck.key : defaultPlayerDeck().key;
+    assert.deepEqual(zones.keydeck.map((uid) => game.state.cards[uid].id).sort(), [...expectedKeys].sort());
+  }
 });
 
 test("a legal normal summon moves one main-deck monster to the field once per turn", () => {

@@ -11,6 +11,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.TimeUnit
+import com.simsy.handbattle.deck.PlayerDeck
 
 data class RoomPlayerSnapshot(
     val seat: Int,
@@ -155,13 +156,20 @@ object RoomApi {
         idToken: String,
         session: RoomSession,
         ready: Boolean,
+        deck: PlayerDeck,
     ): RoomSnapshot {
+        val body = JSONObject().put("ready", ready)
+        if (ready) {
+            body.put("deck", JSONObject()
+                .put("main", JSONArray().apply { deck.main.forEach { put(it) } })
+                .put("key", JSONArray().apply { deck.key.forEach { put(it) } }))
+        }
         return requestJson(
             serverUrl = serverUrl,
             path = "/v1/rooms/${session.roomCode}/ready",
             idToken = idToken,
             seatToken = session.seatToken,
-            body = JSONObject().put("ready", ready),
+            body = body,
         ).roomSnapshot()
     }
 
