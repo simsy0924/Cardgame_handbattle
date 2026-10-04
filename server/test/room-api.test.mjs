@@ -132,7 +132,7 @@ describe("online room API", () => {
     assert.equal(wrongSeat.status, 403);
   });
 
-  it("marks a room ready only after both participants confirm", async () => {
+  it("starts a private duel snapshot after both participants confirm", async () => {
     const { worker, env } = setup();
     const created = await json(await worker.fetch(apiRequest("/v1/rooms", {
       method: "POST",
@@ -145,11 +145,12 @@ describe("online room API", () => {
       body: {},
     }), env));
 
-    await worker.fetch(apiRequest(`${path}/ready`, {
+    const firstReady = await worker.fetch(apiRequest(`${path}/ready`, {
       method: "POST",
       seatToken: created.seatToken,
       body: { ready: true },
     }), env);
+    assert.equal((await json(firstReady)).room.phase, "waiting");
     const finalReady = await worker.fetch(apiRequest(`${path}/ready`, {
       method: "POST",
       token: "second",
@@ -157,7 +158,37 @@ describe("online room API", () => {
       body: { ready: true },
     }), env);
 
-    assert.equal((await json(finalReady)).room.phase, "ready");
+    const started = await json(finalReady);
+    assert.equal(started.room.phase, "playing");
+    const firstSeat = started.room.duel.turnSeat;
+    assert.equal(started.room.duel.players[firstSeat].handCount, 6);
+    assert.equal(started.room.duel.players[1 - firstSeat].handCount, 7);
+    assert.equal(started.room.duel.players[0].hand.length, started.room.duel.players[0].handCount);
+    assert.equal(started.room.duel.players[1].hand.length, started.room.duel.players[1].handCount);
+    const opponentSeat = 1 - started.seat;
+    assert.equal(started.room.duel.players[opponentSeat].hand.every((card) => card.hidden && !card.name && !card.uid), true);
+
+    const activeSeat = started.room.duel.turnSeat;
+    const activeToken = activeSeat === 0 ? created.seatToken : guest.seatToken;
+    const activeBearer = activeSeat === 0 ? "ok" : "second";
+    const nextPhase = await worker.fetch(apiRequest(`${path}/action`, {
+      method: "POST",
+      token: activeBearer,
+      seatToken: activeToken,
+      body: { type: "next_phase" },
+    }), env);
+    assert.equal(nextPhase.status, 200);
+    assert.equal((await json(nextPhase)).room.duel.phase, "attack");
+
+    const wrongSeat = 1 - activeSeat;
+    const wrongSeatResponse = await worker.fetch(apiRequest(`${path}/action`, {
+      method: "POST",
+      token: wrongSeat === 0 ? "ok" : "second",
+      seatToken: wrongSeat === 0 ? created.seatToken : guest.seatToken,
+      body: { type: "next_phase" },
+    }), env);
+    assert.equal(wrongSeatResponse.status, 400);
+    assert.equal((await json(wrongSeatResponse)).error, "not_your_turn");
   });
 
   it("lets a player leave and releases that seat for the next opponent", async () => {

@@ -47,6 +47,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.simsy.handbattle.online.DuelActionRequest
 import com.simsy.handbattle.online.RoomApi
 import com.simsy.handbattle.online.RoomApiException
 import com.simsy.handbattle.online.RoomCode
@@ -94,18 +95,33 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = Background) {
                     val activeRoomSession = roomSession
                     if (activeRoomSession != null) {
-                        RoomLobbyScreen(
-                            session = activeRoomSession,
-                            snapshot = roomSnapshot,
-                            connectionStatus = roomConnectionStatus,
-                            statusMessage = statusMessage,
-                            isSignedIn = currentUser != null,
-                            isBusy = isBusy || roomActionBusy || isRoomConnecting,
-                            onSignIn = ::signInWithGoogle,
-                            onReadyChange = ::setReady,
-                            onReconnect = ::reconnectRoom,
-                            onLeave = ::leaveRoom,
-                        )
+                        val activeSnapshot = roomSnapshot
+                        if (activeSnapshot != null &&
+                            (activeSnapshot.phase == "playing" || activeSnapshot.phase == "finished")
+                        ) {
+                            DuelScreen(
+                                session = activeRoomSession,
+                                snapshot = activeSnapshot,
+                                connectionStatus = roomConnectionStatus,
+                                statusMessage = statusMessage,
+                                isBusy = isBusy || roomActionBusy || isRoomConnecting,
+                                onAction = ::submitGameAction,
+                                onLeave = ::leaveRoom,
+                            )
+                        } else {
+                            RoomLobbyScreen(
+                                session = activeRoomSession,
+                                snapshot = activeSnapshot,
+                                connectionStatus = roomConnectionStatus,
+                                statusMessage = statusMessage,
+                                isSignedIn = currentUser != null,
+                                isBusy = isBusy || roomActionBusy || isRoomConnecting,
+                                onSignIn = ::signInWithGoogle,
+                                onReadyChange = ::setReady,
+                                onReconnect = ::reconnectRoom,
+                                onLeave = ::leaveRoom,
+                            )
+                        }
                     } else {
                         OnlineStartScreen(
                         currentUser = currentUser,
@@ -297,6 +313,48 @@ class MainActivity : ComponentActivity() {
                         statusMessage = ""
                     } catch (error: Exception) {
                         statusMessage = error.localizedMessage ?: "준비 상태를 변경하지 못했습니다."
+                    } finally {
+                        roomActionBusy = false
+                    }
+                }
+            }
+            .addOnFailureListener { error ->
+                roomActionBusy = false
+                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+            }
+    }
+
+    private fun submitGameAction(action: DuelActionRequest) {
+        val session = roomSession ?: return
+        val user = firebaseAuth?.currentUser
+        if (user == null) {
+            statusMessage = "대전에 참여하려면 Google 계정으로 로그인하세요."
+            return
+        }
+        if (roomActionBusy || isRoomConnecting) return
+        roomActionBusy = true
+        user.getIdToken(false)
+            .addOnSuccessListener { tokenResult ->
+                val idToken = tokenResult.token
+                if (idToken.isNullOrBlank()) {
+                    roomActionBusy = false
+                    statusMessage = "Firebase 인증 토큰을 가져오지 못했습니다."
+                    return@addOnSuccessListener
+                }
+                lifecycleScope.launch {
+                    try {
+                        val snapshot = withContext(Dispatchers.IO) {
+                            RoomApi.submitGameAction(
+                                BuildConfig.ROOM_SERVER_URL,
+                                idToken,
+                                session,
+                                action,
+                            )
+                        }
+                        publishRoomSnapshot(snapshot)
+                        statusMessage = ""
+                    } catch (error: Exception) {
+                        statusMessage = error.localizedMessage ?: "게임 행동을 처리하지 못했습니다."
                     } finally {
                         roomActionBusy = false
                     }

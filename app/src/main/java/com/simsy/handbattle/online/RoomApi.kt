@@ -26,6 +26,69 @@ data class RoomSnapshot(
     val viewerSeat: Int,
     val players: List<RoomPlayerSnapshot?>,
     val updatedAt: Long,
+    val duel: DuelSnapshot? = null,
+)
+
+data class DuelCardSnapshot(
+    val uid: String?,
+    val name: String?,
+    val type: String?,
+    val currentAttack: Int?,
+    val hidden: Boolean,
+)
+
+data class DuelPlayerSnapshot(
+    val seat: Int,
+    val handCount: Int,
+    val hand: List<DuelCardSnapshot>,
+    val deckCount: Int,
+    val grave: List<DuelCardSnapshot>,
+    val banished: List<DuelCardSnapshot>,
+    val field: List<DuelCardSnapshot>,
+    val fieldZone: List<DuelCardSnapshot>,
+    val keyDeckCount: Int,
+    val keyDeck: List<DuelCardSnapshot>,
+)
+
+data class DuelActionSnapshot(
+    val type: String,
+    val uid: String?,
+    val targetUid: String?,
+    val effectId: String?,
+    val label: String,
+)
+
+data class DuelChoiceOption(val value: String, val label: String)
+
+data class DuelChoiceSnapshot(
+    val id: String,
+    val waiting: Boolean,
+    val title: String,
+    val kind: String,
+    val inputKind: String?,
+    val min: Int,
+    val max: Int,
+    val options: List<DuelChoiceOption>,
+)
+
+data class DuelSnapshot(
+    val turnSeat: Int,
+    val phase: String,
+    val turnNumber: Int,
+    val players: List<DuelPlayerSnapshot>,
+    val actions: List<DuelActionSnapshot>,
+    val pendingChoice: DuelChoiceSnapshot?,
+    val winnerSeat: Int?,
+    val finished: Boolean,
+    val format: String,
+)
+
+data class DuelActionRequest(
+    val type: String,
+    val uid: String? = null,
+    val targetUid: String? = null,
+    val effectId: String? = null,
+    val values: List<String> = emptyList(),
 )
 
 data class RoomSession(
@@ -99,6 +162,28 @@ object RoomApi {
             idToken = idToken,
             seatToken = session.seatToken,
             body = JSONObject().put("ready", ready),
+        ).roomSnapshot()
+    }
+
+    fun submitGameAction(
+        serverUrl: String,
+        idToken: String,
+        session: RoomSession,
+        action: DuelActionRequest,
+    ): RoomSnapshot {
+        val body = JSONObject().put("type", action.type)
+        action.uid?.let { body.put("uid", it) }
+        action.targetUid?.let { body.put("targetUid", it) }
+        action.effectId?.let { body.put("effectId", it) }
+        if (action.type == "choice") {
+            body.put("values", JSONArray().apply { action.values.forEach { put(it) } })
+        }
+        return requestJson(
+            serverUrl = serverUrl,
+            path = "/v1/rooms/${session.roomCode}/action",
+            idToken = idToken,
+            seatToken = session.seatToken,
+            body = body,
         ).roomSnapshot()
     }
 
@@ -199,7 +284,7 @@ object RoomApi {
             }
             if (status !in 200..299) {
                 val code = response.optString("error")
-                throw RoomApiException(code, messageFor(code, status))
+                throw RoomApiException(code, response.optString("message").ifBlank { messageFor(code, status) })
             }
             return response
         } finally {
@@ -252,7 +337,85 @@ object RoomApi {
             viewerSeat = room.optInt("viewerSeat", -1),
             players = players,
             updatedAt = room.optLong("updatedAt", 0),
+            duel = room.optJSONObject("duel")?.let(::parseDuelSnapshot),
         )
+    }
+
+    private fun parseDuelSnapshot(duel: JSONObject): DuelSnapshot {
+        val playersJson = duel.optJSONArray("players") ?: JSONArray()
+        val players = (0 until playersJson.length()).mapNotNull { index ->
+            playersJson.optJSONObject(index)?.let { player ->
+                DuelPlayerSnapshot(
+                    seat = player.optInt("seat", index),
+                    handCount = player.optInt("handCount", 0),
+                    hand = parseCards(player.optJSONArray("hand")),
+                    deckCount = player.optInt("deckCount", 0),
+                    grave = parseCards(player.optJSONArray("grave")),
+                    banished = parseCards(player.optJSONArray("banished")),
+                    field = parseCards(player.optJSONArray("field")),
+                    fieldZone = parseCards(player.optJSONArray("fieldZone")),
+                    keyDeckCount = player.optInt("keyDeckCount", 0),
+                    keyDeck = parseCards(player.optJSONArray("keyDeck")),
+                )
+            }
+        }
+        val actionsJson = duel.optJSONArray("actions") ?: JSONArray()
+        val actions = (0 until actionsJson.length()).mapNotNull { index ->
+            actionsJson.optJSONObject(index)?.let { action ->
+                DuelActionSnapshot(
+                    type = action.optString("type"),
+                    uid = if (action.isNull("uid")) null else action.optString("uid").takeIf { it.isNotBlank() },
+                    targetUid = if (action.isNull("targetUid")) null else action.optString("targetUid").takeIf { it.isNotBlank() },
+                    effectId = if (action.isNull("effectId")) null else action.optString("effectId").takeIf { it.isNotBlank() },
+                    label = action.optString("label"),
+                )
+            }
+        }
+        val pending = duel.optJSONObject("pendingChoice")?.let { prompt ->
+            val optionsJson = prompt.optJSONArray("options") ?: JSONArray()
+            val options = (0 until optionsJson.length()).mapNotNull { index ->
+                optionsJson.optJSONObject(index)?.let { option ->
+                    DuelChoiceOption(option.optString("value"), option.optString("label"))
+                }
+            }
+            DuelChoiceSnapshot(
+                id = prompt.optString("id"),
+                waiting = prompt.optBoolean("waiting", false),
+                title = prompt.optString("title"),
+                kind = prompt.optString("kind"),
+                inputKind = prompt.optString("inputKind").takeIf { it.isNotBlank() },
+                min = prompt.optInt("min", 1),
+                max = prompt.optInt("max", 1),
+                options = options,
+            )
+        }
+        val winnerSeat = if (duel.isNull("winnerSeat")) null else duel.optInt("winnerSeat")
+        return DuelSnapshot(
+            turnSeat = duel.optInt("turnSeat", 0),
+            phase = duel.optString("phase", "deploy"),
+            turnNumber = duel.optInt("turnNumber", 1),
+            players = players,
+            actions = actions,
+            pendingChoice = pending,
+            winnerSeat = winnerSeat,
+            finished = duel.optBoolean("finished", false),
+            format = duel.optString("format", "스타터 덱"),
+        )
+    }
+
+    private fun parseCards(cards: JSONArray?): List<DuelCardSnapshot> {
+        if (cards == null) return emptyList()
+        return (0 until cards.length()).mapNotNull { index ->
+            cards.optJSONObject(index)?.let { card ->
+                DuelCardSnapshot(
+                    uid = if (card.isNull("uid")) null else card.optString("uid").takeIf { it.isNotBlank() },
+                    name = if (card.isNull("name")) null else card.optString("name").takeIf { it.isNotBlank() },
+                    type = if (card.isNull("type")) null else card.optString("type").takeIf { it.isNotBlank() },
+                    currentAttack = if (card.isNull("currentAttack")) null else card.optInt("currentAttack"),
+                    hidden = card.optBoolean("hidden", false),
+                )
+            }
+        }
     }
 
     private fun webSocketUrl(serverUrl: String, path: String): String {
@@ -276,6 +439,13 @@ object RoomApi {
         "unauthorized" -> "Firebase 인증에 실패했습니다. Google 로그인 설정을 확인하세요."
         "auth_verification_unavailable" -> "인증 서버에 연결할 수 없습니다. 잠시 후 다시 시도하세요."
         "room_code_unavailable" -> "사용할 방 코드를 만들지 못했습니다. 다시 시도하세요."
+        "game_started" -> "이미 대전이 시작됐습니다."
+        "game_not_started" -> "대전이 아직 시작되지 않았습니다."
+        "not_your_turn" -> "상대 턴에는 행동할 수 없습니다."
+        "wrong_phase" -> "현재 단계에서는 할 수 없는 행동입니다."
+        "choice_pending" -> "진행 중인 선택을 먼저 완료하세요."
+        "not_prompted_player" -> "현재 선택을 요청받은 플레이어가 아닙니다."
+        "game_finished" -> "대전이 끝났습니다."
         else -> if (status > 0) "방 서버 요청에 실패했습니다 ($status)." else "방 서버 연결이 종료됐습니다."
     }
 }
