@@ -39,7 +39,7 @@ npx wrangler@latest dev
 
 GitHub Actions deployment is defined in [worker-deploy.yml](../.github/workflows/worker-deploy.yml). Before enabling it:
 
-1. In Cloudflare, create an API token with the **Edit Cloudflare Workers** policy and restrict it to the account that will host this Worker.
+1. In Cloudflare, create an account API token with the **Workers Admin** role at the Workers product scope, limited to the account that will host this Worker. Creating a new Worker requires product-level Admin; after the first deploy, you can reduce access to Editor for this Worker.
 2. In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets:
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
