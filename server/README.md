@@ -26,7 +26,7 @@ When both players are ready, the Durable Object starts a match from their separa
 - The editor's default list has 54 main cards: three copies of every main-deck card in the Penguin and generic card files. It selects 10 key cards once each.
 - Players can edit one saved deck on their device. The server requires 40–60 main cards, no more than four copies of a main card, and up to 10 key cards with no more than one copy of each.
 - First player is chosen randomly. The first player starts with six cards; the second starts with seven and draws at the start of their first turn.
-- A player may normally summon one main-deck monster per turn. Key summons and card-effect summons follow the uploaded engine rules.
+- This game has no normal summon. Monsters can only be summoned by card effects or the key-card summon procedure. The monster zone has five slots.
 - The game ends when a player's hand reaches zero cards. The current engine resolves card choices and response windows through server-saved pending actions.
 
 ## Test

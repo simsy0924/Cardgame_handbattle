@@ -90,7 +90,7 @@ fun DeckEditorScreen(
                 Text("카드를 눌러 공식 효과 텍스트를 확인할 수 있습니다.", color = EditorMuted, fontSize = 12.sp)
             }
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onCancel) { Text("취소", color = EditorMuted) }
+            TextButton(onClick = onCancel) { Text("나가기", color = EditorMuted) }
             Button(
                 onClick = { onSave(deck) },
                 shape = RoundedCornerShape(10.dp),
@@ -221,7 +221,7 @@ fun DeckEditorScreen(
                     ) {
                         Text("기본 덱 복원", color = EditorMuted, fontSize = 12.sp, maxLines = 1)
                     }
-                    TextButton(onClick = onCancel) { Text("닫기", color = EditorMuted) }
+                    TextButton(onClick = onCancel) { Text("나가기", color = EditorMuted) }
                 }
             }
         }

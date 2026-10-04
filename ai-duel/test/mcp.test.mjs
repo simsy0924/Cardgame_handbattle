@@ -35,6 +35,7 @@ test("read MCP tools expose only the AI perspective and provide its legal moves"
     },
   });
   const game = store.create({ aiDeck: defaultPlayerDeck() });
+  assert.equal(store.getState(game.code, 0).aiToolSeen, false);
   const stateResult = handleMcpMessage(store, {
     jsonrpc: "2.0",
     id: "state",
@@ -43,7 +44,9 @@ test("read MCP tools expose only the AI perspective and provide its legal moves"
   }).body.result;
   assert.equal(stateResult.isError, undefined);
   const aiState = stateResult.structuredContent;
-  assert.equal(aiState.snapshot.players[0].hand.every((card) => card.hidden && card.id === undefined), true);
+  assert.equal(aiState.aiToolSeen, true);
+  assert.equal(store.getState(game.code, 0).aiToolSeen, true);
+  assert.equal(aiState.snapshot.players[0].hand.every((card) => card.hidden && card.id === null), true);
   assert.equal(aiState.snapshot.players[1].hand.every((card) => card.id && card.description), true);
 
   const actions = handleMcpMessage(store, {

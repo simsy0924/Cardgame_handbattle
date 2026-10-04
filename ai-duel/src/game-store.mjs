@@ -92,7 +92,7 @@ export class MatchStore {
 
   create({ humanDeck, aiDeck, aiName } = {}) {
     if (aiDeck === undefined || aiDeck === null) {
-      throw new MatchError("ai_deck_required", "대전을 시작하려면 직접 준비한 AI 덱 JSON을 전달하세요.");
+      throw new MatchError("ai_deck_required", "앱의 AI 덱 편집창에서 AI 덱을 먼저 만들고 저장하세요.");
     }
     this.#prune();
     const playerDeck = validatePlayerDeck(normalizeDeckFile(humanDeck ?? defaultPlayerDeck()));
@@ -110,6 +110,7 @@ export class MatchStore {
       lastActivityAt: this.now(),
       revision: 0,
       aiActionCache: new Map(),
+      aiToolSeen: false,
     };
     this.games.set(code, match);
     while (this.games.size > GAME_LIMIT) this.games.delete(this.games.keys().next().value);
@@ -120,8 +121,10 @@ export class MatchStore {
     const match = this.#match(code);
     if (![HUMAN_SEAT, AI_SEAT].includes(seat)) throw new MatchError("invalid_seat", "플레이어 자리를 확인하세요.");
     match.lastActivityAt = this.now();
+    if (seat === AI_SEAT) match.aiToolSeen = true;
     return {
       code: match.code,
+      aiToolSeen: match.aiToolSeen,
       aiName: match.aiName,
       revision: match.revision,
       snapshot: snapshotFor(match, seat),
@@ -131,6 +134,7 @@ export class MatchStore {
   getLegalActions(code) {
     const match = this.#match(code);
     match.lastActivityAt = this.now();
+    match.aiToolSeen = true;
     const snapshot = snapshotFor(match, AI_SEAT);
 
     if (match.game.finished) {
@@ -178,6 +182,7 @@ export class MatchStore {
   applyAiAction(code, { actionId, choiceValues } = {}) {
     const match = this.#match(code);
     match.lastActivityAt = this.now();
+    match.aiToolSeen = true;
     let command;
 
     if (match.game.pending) {
@@ -210,7 +215,7 @@ export class MatchStore {
     return [
       "승리: 상대 패를 0장으로 만든다.",
       "턴: 드로우 → 전개 → 공격 → 엔드. 선공 첫 턴은 드로우하지 않는다.",
-      "전개 단계에는 메인 덱 몬스터를 턴에 1번 일반 소환할 수 있다. 몬스터 존은 5칸이다.",
+      "일반 소환은 없다. 몬스터는 카드 효과 또는 키 카드 소환 절차로만 소환한다. 몬스터 존은 5칸이다.",
       "카드 효과와 키 카드 소환 절차는 서버 엔진이 검증한다. 도구가 제시한 합법 행동만 사용한다.",
       "AI는 플레이어 B다. 사람 패의 비공개 카드는 상태 응답에서 숨겨진다.",
       "같은 카드 최대 투입: 메인 덱 4장, 키 카드 덱 1장. 키 카드 덱 최대 10장.",

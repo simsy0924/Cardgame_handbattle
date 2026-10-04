@@ -83,23 +83,17 @@ test("creates each player's game zones from that player's submitted deck", () =>
   }
 });
 
-test("a legal normal summon moves one main-deck monster to the field once per turn", () => {
+test("normal summons are unavailable and monsters can only be summoned by effects or key procedures", () => {
   const game = createDuel();
   const engine = editableEngine(game);
   engine.state.turn = { player: "A", phase: "deploy", number: 1 };
-  const summoned = engine.addCard(byName["현자 펭귄"], "A", "hand");
+  const card = engine.addCard(byName["현자 펭귄"], "A", "hand");
   game.state = engine.state;
 
-  const afterSummon = executeDuelCommand(game, 0, { type: "normal_summon", uid: summoned });
-  assert.equal(afterSummon.state.cards[summoned].zone, "field");
-  assert.equal(afterSummon.state.players.A.field.includes(summoned), true);
-
-  const updatedEngine = editableEngine(afterSummon);
-  const extra = updatedEngine.addCard(byName["펭귄 부부"], "A", "hand");
-  afterSummon.state = updatedEngine.state;
+  assert.equal(duelSnapshot(game, 0).actions.some((action) => action.type === "normal_summon"), false);
   assert.throws(
-    () => executeDuelCommand(afterSummon, 0, { type: "normal_summon", uid: extra }),
-    (error) => error.code === "invalid_summon",
+    () => executeDuelCommand(game, 0, { type: "normal_summon", uid: card }),
+    (error) => error.code === "invalid_action" && /일반 소환이 없습니다/.test(error.message),
   );
 });
 

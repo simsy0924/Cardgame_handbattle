@@ -2,6 +2,7 @@ package com.simsy.handbattle
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -103,6 +104,8 @@ class MainActivity : ComponentActivity() {
     private var isRoomConnecting by mutableStateOf(false)
     private var roomStream: WebSocket? = null
     private var roomStreamGeneration = 0
+    private var roomFlowGeneration = 0
+    private var aiDuelStartGeneration = 0
     private val roomSessionStore by lazy { RoomSessionStore(applicationContext) }
     private val deckCardCatalog by lazy { DeckCardCatalog.load(applicationContext) }
     private val deckStore by lazy { DeckStore(applicationContext) }
@@ -122,6 +125,20 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = Background) {
                     val activeRoomSession = roomSession
                     val activeAiDuelSession = aiDuelSession
+                    BackHandler(
+                        enabled = isDeckEditorOpen || isAiDeckEditorOpen ||
+                            activeRoomSession != null || activeAiDuelSession != null || isAiDuelSetupOpen ||
+                            (isBusy && activeRoomSession == null),
+                    ) {
+                        when {
+                            isAiDeckEditorOpen -> isAiDeckEditorOpen = false
+                            isDeckEditorOpen -> isDeckEditorOpen = false
+                            activeRoomSession != null -> leaveRoom()
+                            activeAiDuelSession != null -> leaveAiDuel()
+                            isAiDuelSetupOpen -> closeAiDuelSetup()
+                            isBusy -> cancelRoomRequest()
+                        }
+                    }
                     if (isDeckEditorOpen) {
                         DeckEditorScreen(
                             cards = deckCardCatalog,
@@ -149,6 +166,7 @@ class MainActivity : ComponentActivity() {
                                 statusMessage = statusMessage,
                                 isBusy = isBusy || roomActionBusy || isRoomConnecting,
                                 onAction = ::submitGameAction,
+                                cards = deckCardCatalog,
                                 onLeave = ::leaveRoom,
                             )
                         } else {
@@ -171,6 +189,7 @@ class MainActivity : ComponentActivity() {
                     } else if (activeAiDuelSession != null) {
                         AiDuelScreen(
                             session = activeAiDuelSession,
+                            cards = deckCardCatalog,
                             match = aiDuelMatch,
                             connectionStatus = aiDuelConnectionStatus,
                             statusMessage = aiDuelStatusMessage,
@@ -186,10 +205,7 @@ class MainActivity : ComponentActivity() {
                             aiDeck = aiDuelDeck,
                             isBusy = aiDuelBusy,
                             statusMessage = aiDuelStatusMessage,
-                            onBack = {
-                                isAiDuelSetupOpen = false
-                                aiDuelStatusMessage = ""
-                            },
+                            onBack = ::closeAiDuelSetup,
                             onEditAiDeck = { isAiDeckEditorOpen = true },
                             onStart = ::startAiDuel,
                         )
@@ -485,10 +501,12 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (isRoomConnecting) return
+        val generation = roomFlowGeneration
         isRoomConnecting = true
         roomConnectionStatus = "방 연결 복구 중…"
         user.getIdToken(false)
             .addOnSuccessListener { tokenResult ->
+                if (generation != roomFlowGeneration || roomSession != session) return@addOnSuccessListener
                 val idToken = tokenResult.token
                 if (idToken.isNullOrBlank()) {
                     isRoomConnecting = false
@@ -501,10 +519,12 @@ class MainActivity : ComponentActivity() {
                         val snapshot = withContext(Dispatchers.IO) {
                             RoomApi.reconnectRoom(BuildConfig.ROOM_SERVER_URL, idToken, session)
                         }
+                        if (generation != roomFlowGeneration || roomSession != session) return@launch
                         publishRoomSnapshot(snapshot)
                         statusMessage = ""
                         openRoomStream(session, idToken)
                     } catch (error: RoomApiException) {
+                        if (generation != roomFlowGeneration || roomSession != session) return@launch
                         roomConnectionStatus = "연결 복구 실패"
                         statusMessage = error.localizedMessage ?: "대기실 연결을 복구하지 못했습니다."
                         if (error.errorCode == "room_not_found" || error.errorCode == "invalid_seat_token") {
@@ -514,66 +534,50 @@ class MainActivity : ComponentActivity() {
                             roomSnapshot = null
                         }
                     } catch (error: Exception) {
+                        if (generation != roomFlowGeneration || roomSession != session) return@launch
                         roomConnectionStatus = "연결 복구 실패"
                         statusMessage = error.localizedMessage ?: "대기실 연결을 복구하지 못했습니다."
                     } finally {
-                        isRoomConnecting = false
+                        if (generation == roomFlowGeneration) isRoomConnecting = false
                     }
                 }
             }
             .addOnFailureListener { error ->
-                isRoomConnecting = false
-                roomConnectionStatus = "연결 복구 실패"
-                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+                if (generation == roomFlowGeneration && roomSession == session) {
+                    isRoomConnecting = false
+                    roomConnectionStatus = "연결 복구 실패"
+                    statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+                }
             }
     }
 
     private fun leaveRoom() {
-        val session = roomSession ?: return
-        val user = firebaseAuth?.currentUser
-        if (user == null) {
-            statusMessage = "방을 나가려면 Google 계정에 연결해야 합니다."
+        val session = roomSession
+        roomFlowGeneration += 1
+        closeRoomStream()
+        roomSessionStore.clear()
+        roomSession = null
+        roomSnapshot = null
+        roomConnectionStatus = "연결 안 됨"
+        isRoomConnecting = false
+        roomActionBusy = false
+        statusMessage = if (session == null) "연결 요청을 취소했습니다." else "방에서 나왔습니다."
+        if (session == null) {
+            isBusy = false
             return
         }
-        if (roomActionBusy || isRoomConnecting) return
-        roomActionBusy = true
+
+        val user = firebaseAuth?.currentUser ?: return
         user.getIdToken(false)
             .addOnSuccessListener { tokenResult ->
-                val idToken = tokenResult.token
-                if (idToken.isNullOrBlank()) {
-                    roomActionBusy = false
-                    statusMessage = "Firebase 인증 토큰을 가져오지 못했습니다."
-                    return@addOnSuccessListener
-                }
-                lifecycleScope.launch {
+                val idToken = tokenResult.token ?: return@addOnSuccessListener
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        withContext(Dispatchers.IO) {
-                            RoomApi.leaveRoom(BuildConfig.ROOM_SERVER_URL, idToken, session)
-                        }
-                        roomSessionStore.clear()
-                        roomSession = null
-                        roomSnapshot = null
-                        closeRoomStream()
-                        roomConnectionStatus = "연결 안 됨"
-                        statusMessage = "대기실에서 나왔습니다."
-                    } catch (error: RoomApiException) {
-                        if (error.errorCode == "room_not_found" || error.errorCode == "invalid_seat_token") {
-                            roomSessionStore.clear()
-                            roomSession = null
-                            roomSnapshot = null
-                            closeRoomStream()
-                        }
-                        statusMessage = error.localizedMessage ?: "대기실에서 나가지 못했습니다."
-                    } catch (error: Exception) {
-                        statusMessage = error.localizedMessage ?: "대기실에서 나가지 못했습니다."
-                    } finally {
-                        roomActionBusy = false
+                        RoomApi.leaveRoom(BuildConfig.ROOM_SERVER_URL, idToken, session)
+                    } catch (_: Exception) {
+                        // Local navigation has completed, so a failed cleanup must not trap the player in the room.
                     }
                 }
-            }
-            .addOnFailureListener { error ->
-                roomActionBusy = false
-                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
             }
     }
 
@@ -633,6 +637,7 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        val generation = ++aiDuelStartGeneration
         aiDuelBusy = true
         aiDuelStatusMessage = "AI 대전을 만들고 있습니다…"
         lifecycleScope.launch {
@@ -645,6 +650,7 @@ class MainActivity : ComponentActivity() {
                         aiName = aiName,
                     )
                 }
+                if (generation != aiDuelStartGeneration) return@launch
                 val session = AiDuelSession(gameCode = match.code, aiName = match.aiName)
                 aiDuelStore.save(session)
                 aiDuelSession = session
@@ -653,9 +659,11 @@ class MainActivity : ComponentActivity() {
                 aiDuelStatusMessage = ""
                 isAiDuelSetupOpen = false
             } catch (error: Exception) {
-                aiDuelStatusMessage = error.localizedMessage ?: "AI 대전을 시작하지 못했습니다."
+                if (generation == aiDuelStartGeneration) {
+                    aiDuelStatusMessage = error.localizedMessage ?: "AI 대전을 시작하지 못했습니다."
+                }
             } finally {
-                aiDuelBusy = false
+                if (generation == aiDuelStartGeneration) aiDuelBusy = false
             }
         }
     }
@@ -715,7 +723,15 @@ class MainActivity : ComponentActivity() {
         if (current == null || updated.revision >= current.revision) aiDuelMatch = updated
     }
 
+    private fun closeAiDuelSetup() {
+        aiDuelStartGeneration += 1
+        aiDuelBusy = false
+        isAiDuelSetupOpen = false
+        aiDuelStatusMessage = ""
+    }
+
     private fun leaveAiDuel() {
+        aiDuelStartGeneration += 1
         aiDuelStore.clear()
         aiDuelSession = null
         aiDuelMatch = null
@@ -725,6 +741,12 @@ class MainActivity : ComponentActivity() {
         aiDuelRefreshing = false
     }
 
+    private fun cancelRoomRequest() {
+        roomFlowGeneration += 1
+        isBusy = false
+        statusMessage = "연결 요청을 취소했습니다."
+    }
+
     private fun performRoomRequest(request: (idToken: String, displayName: String) -> RoomSessionResult) {
         val user = firebaseAuth?.currentUser
         if (user == null) {
@@ -732,9 +754,11 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        val generation = ++roomFlowGeneration
         isBusy = true
         user.getIdToken(false)
             .addOnSuccessListener { tokenResult ->
+                if (generation != roomFlowGeneration) return@addOnSuccessListener
                 val idToken = tokenResult.token
                 if (idToken.isNullOrBlank()) {
                     isBusy = false
@@ -747,6 +771,16 @@ class MainActivity : ComponentActivity() {
                 lifecycleScope.launch {
                     try {
                         val result = withContext(Dispatchers.IO) { request(idToken, displayName) }
+                        if (generation != roomFlowGeneration) {
+                            withContext(Dispatchers.IO) {
+                                try {
+                                    RoomApi.leaveRoom(BuildConfig.ROOM_SERVER_URL, idToken, result.session)
+                                } catch (_: Exception) {
+                                    // A canceled room request must not restore the lobby screen.
+                                }
+                            }
+                            return@launch
+                        }
                         roomSession = result.session
                         roomSnapshot = result.snapshot
                         roomSessionStore.save(result.session)
@@ -754,17 +788,22 @@ class MainActivity : ComponentActivity() {
                         statusMessage = "방에 연결했습니다. 상대에게 방 코드 ${result.session.roomCode}를 알려주세요."
                         openRoomStream(result.session, idToken)
                     } catch (error: Exception) {
-                        statusMessage = error.localizedMessage ?: "방 서버에 연결하지 못했습니다."
+                        if (generation == roomFlowGeneration) {
+                            statusMessage = error.localizedMessage ?: "방 서버에 연결하지 못했습니다."
+                        }
                     } finally {
-                        isBusy = false
+                        if (generation == roomFlowGeneration) isBusy = false
                     }
                 }
             }
             .addOnFailureListener { error ->
-                isBusy = false
-                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+                if (generation == roomFlowGeneration) {
+                    isBusy = false
+                    statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+                }
             }
     }
+
 }
 
 @Composable

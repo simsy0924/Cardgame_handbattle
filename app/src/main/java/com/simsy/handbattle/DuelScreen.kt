@@ -1,8 +1,11 @@
 package com.simsy.handbattle
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -22,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simsy.handbattle.deck.DeckCard
 import com.simsy.handbattle.online.DuelActionRequest
 import com.simsy.handbattle.online.DuelActionSnapshot
 import com.simsy.handbattle.online.DuelCardSnapshot
@@ -57,6 +63,8 @@ fun DuelScreen(
     onLeave: () -> Unit,
     aiDuelProvider: String? = null,
     aiDuelConnectionInfo: String? = null,
+    aiToolSeen: Boolean? = null,
+    cards: List<DeckCard> = emptyList(),
     onCopyAiDuelInstructions: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
 ) {
@@ -68,6 +76,7 @@ fun DuelScreen(
     val opponentName = snapshot.players.getOrNull(1 - ownSeat)?.displayName ?: "상대"
     val choice = game?.pendingChoice
     var selectedValues by remember(choice?.id) { mutableStateOf(emptySet<String>()) }
+    var selectedCard by remember { mutableStateOf<DuelCardSnapshot?>(null) }
 
     Row(
         modifier = Modifier
@@ -96,7 +105,7 @@ fun DuelScreen(
                 if (onRefresh != null) {
                     OutlinedButton(onClick = onRefresh, enabled = !isBusy) { Text("새로고침") }
                 }
-                OutlinedButton(onClick = onLeave, enabled = !isBusy) { Text("나가기") }
+                OutlinedButton(onClick = onLeave) { Text("나가기") }
             }
 
             if (game == null || ownPlayer == null || opponent == null) {
@@ -130,25 +139,42 @@ fun DuelScreen(
                 }
 
                 PlayerZone(
-                    title = "$opponentName  ·  손패 ${opponent.handCount}장  ·  덱 ${opponent.deckCount}장",
+                    title = opponentName,
+                    handCount = opponent.handCount,
+                    deckCount = opponent.deckCount,
+                    keyDeckCount = opponent.keyDeckCount,
                     cards = opponent.field,
                     fieldZone = opponent.fieldZone,
                     publicHand = opponent.hand.filterNot { it.hidden },
                     grave = opponent.grave,
                     banished = opponent.banished,
+                    onCardClick = { selectedCard = it },
                 )
 
                 PlayerZone(
-                    title = "$ownName  ·  손패 ${ownPlayer.handCount}장  ·  덱 ${ownPlayer.deckCount}장",
+                    title = ownName,
+                    handCount = ownPlayer.handCount,
+                    deckCount = ownPlayer.deckCount,
+                    keyDeckCount = ownPlayer.keyDeckCount,
                     cards = ownPlayer.field,
                     fieldZone = ownPlayer.fieldZone,
-                    publicHand = emptyList(),
+                    publicHand = ownPlayer.hand.filter { it.revealed && !it.hidden },
                     grave = ownPlayer.grave,
                     banished = ownPlayer.banished,
+                    onCardClick = { selectedCard = it },
                 )
 
-                CardStrip(title = "내 손패", cards = ownPlayer.hand)
-                CardStrip(title = "내 키 카드 덱 (${ownPlayer.keyDeckCount})", cards = ownPlayer.keyDeck)
+                CardStrip(
+                    title = "내 손패 (${ownPlayer.handCount})",
+                    cards = ownPlayer.hand,
+                    showVisibility = true,
+                    onCardClick = { selectedCard = it },
+                )
+                CardStrip(
+                    title = "내 키 카드 덱 (${ownPlayer.keyDeckCount})",
+                    cards = ownPlayer.keyDeck,
+                    onCardClick = { selectedCard = it },
+                )
             }
         }
 
@@ -170,12 +196,26 @@ fun DuelScreen(
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
-                    Text("${aiDuelProvider ?: "AI"} 연결", color = DuelAccent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                    Text("AI 도구 연결: $aiDuelConnectionInfo", color = DuelMuted, fontSize = 10.sp)
+                    Text("${aiDuelProvider ?: "AI"} 대전 연결 상태", color = DuelAccent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text("게임 서버: $connectionStatus", color = DuelMuted, fontSize = 11.sp)
+                    Text(
+                        "AI 도구 호출: " + if (aiToolSeen == true) "확인됨" else "대기 중",
+                        color = if (aiToolSeen == true) DuelAccent else DuelMuted,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        if (aiToolSeen == true) "AI 대화의 도구 호출이 게임 서버에 도달했습니다."
+                        else "연결한 GPT 또는 Claude 대화에서 안내를 붙여넣고 대전 상태를 조회하세요.",
+                        color = DuelMuted,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp,
+                    )
+                    Text("도구 설정: $aiDuelConnectionInfo", color = DuelMuted, fontSize = 10.sp)
                     Text("대전 코드: ${session.roomCode}", color = Color.White, fontSize = 11.sp)
                     Button(
                         onClick = { onCopyAiDuelInstructions?.invoke() },
-                        enabled = !isBusy && onCopyAiDuelInstructions != null,
+                        enabled = onCopyAiDuelInstructions != null,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(9.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DuelAccent),
@@ -236,38 +276,123 @@ fun DuelScreen(
                 Text(statusMessage, color = Color(0xFFFFB4AB), fontSize = 12.sp, lineHeight = 16.sp)
             }
             Spacer(Modifier.height(4.dp))
-            Text("공격력 차이만큼 패를 버립니다. 패가 0장이 되면 패배합니다.", color = DuelMuted, fontSize = 12.sp)
+            Text("일반 소환은 없습니다. 몬스터는 카드 효과나 키 소환 절차로 소환합니다. 패가 0장이 되면 패배합니다.", color = DuelMuted, fontSize = 12.sp, lineHeight = 16.sp)
         }
+    }
+
+    selectedCard?.takeIf { !it.hidden }?.let { card ->
+        val catalogCard = cards.firstOrNull { it.id == card.cardId }
+        AlertDialog(
+            onDismissRequest = { selectedCard = null },
+            title = {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(card.name ?: catalogCard?.name ?: "카드", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        listOfNotNull(card.type, card.currentAttack?.let { "공격력 $it" }).joinToString(" · "),
+                        color = DuelMuted,
+                        fontSize = 12.sp,
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.height(360.dp).verticalScroll(rememberScrollState()),
+                ) {
+                    Text(
+                        catalogCard?.description ?: card.description ?: "효과 정보가 없습니다.",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        lineHeight = 21.sp,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = { selectedCard = null }) { Text("닫기", color = DuelAccent) } },
+            containerColor = DuelPanel,
+            titleContentColor = Color.White,
+            textContentColor = Color.White,
+        )
     }
 }
 
 @Composable
 private fun PlayerZone(
     title: String,
+    handCount: Int,
+    deckCount: Int,
+    keyDeckCount: Int,
     cards: List<DuelCardSnapshot>,
     fieldZone: List<DuelCardSnapshot>,
     publicHand: List<DuelCardSnapshot>,
     grave: List<DuelCardSnapshot>,
     banished: List<DuelCardSnapshot>,
+    onCardClick: (DuelCardSnapshot) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(DuelPanel, RoundedCornerShape(14.dp))
             .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Text(title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text("몬스터 존", color = DuelMuted, fontSize = 11.sp)
-        CardStrip(cards = cards, compact = true)
-        if (fieldZone.isNotEmpty()) CardStrip(title = "필드 존", cards = fieldZone, compact = true)
-        if (publicHand.isNotEmpty()) CardStrip(title = "공개 패", cards = publicHand, compact = true)
-        Text(
-            "묘지 ${grave.size}장  ·  제외 ${banished.size}장" +
-                grave.takeLast(2).joinToString(prefix = if (grave.isEmpty()) "" else "  ·  ") { it.name ?: "카드" },
-            color = DuelMuted,
-            fontSize = 10.sp,
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            ZoneCount("손패", handCount, Modifier.weight(1f))
+            ZoneCount("메인 덱", deckCount, Modifier.weight(1f))
+            ZoneCount("키 카드 덱", keyDeckCount, Modifier.weight(1f))
+            ZoneCount("묘지 / 제외", grave.size + banished.size, Modifier.weight(1f))
+        }
+        Text("몬스터 존 (${cards.size}/5)", color = DuelMuted, fontSize = 11.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            repeat(5) { index ->
+                val card = cards.getOrNull(index)
+                Box(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(108.dp)
+                        .background(Color(0xFF171B23), RoundedCornerShape(9.dp))
+                        .border(1.dp, Color(0xFF343A46), RoundedCornerShape(9.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (card == null) {
+                        Text("빈 칸\n${index + 1}", color = DuelMuted, fontSize = 10.sp)
+                    } else {
+                        CardTile(card = card, compact = true, onClick = { onCardClick(card) })
+                    }
+                }
+            }
+        }
+        CardStrip(
+            title = "필드 존",
+            cards = fieldZone,
+            compact = true,
+            emptyLabel = "비어 있음",
+            onCardClick = onCardClick,
         )
+        if (publicHand.isNotEmpty()) {
+            CardStrip(
+                title = "공개 패 (${publicHand.size})",
+                cards = publicHand,
+                compact = true,
+                showVisibility = true,
+                onCardClick = onCardClick,
+            )
+        }
+        CardStrip(title = "묘지 (${grave.size})", cards = grave, compact = true, onCardClick = onCardClick)
+        CardStrip(title = "제외 (${banished.size})", cards = banished, compact = true, onCardClick = onCardClick)
+    }
+}
+
+@Composable
+private fun ZoneCount(label: String, count: Int, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.background(Color(0xFF252C3A), RoundedCornerShape(8.dp)).padding(horizontal = 7.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(label, color = DuelMuted, fontSize = 9.sp, maxLines = 1)
+        Text(count.toString(), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -276,26 +401,43 @@ private fun CardStrip(
     title: String? = null,
     cards: List<DuelCardSnapshot>,
     compact: Boolean = false,
+    showVisibility: Boolean = false,
+    emptyLabel: String = "비어 있음",
+    onCardClick: (DuelCardSnapshot) -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         if (title != null) Text(title, color = DuelMuted, fontSize = 11.sp)
         if (cards.isEmpty()) {
-            Text("비어 있음", color = DuelMuted, fontSize = 11.sp)
+            Text(emptyLabel, color = DuelMuted, fontSize = 11.sp)
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                cards.forEach { card -> CardTile(card = card, compact = compact) }
+                cards.forEach { card ->
+                    CardTile(
+                        card = card,
+                        compact = compact,
+                        showVisibility = showVisibility,
+                        onClick = { onCardClick(card) },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CardTile(card: DuelCardSnapshot, compact: Boolean) {
+private fun CardTile(
+    card: DuelCardSnapshot,
+    compact: Boolean,
+    showVisibility: Boolean = false,
+    onClick: () -> Unit = {},
+) {
     Card(
-        modifier = Modifier.width(if (compact) 94.dp else 112.dp),
+        modifier = Modifier
+            .width(if (compact) 94.dp else 112.dp)
+            .clickable(enabled = !card.hidden, onClick = onClick),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = if (card.hidden) Color(0xFF252B36) else Color(0xFF252C3A)),
     ) {
@@ -311,7 +453,14 @@ private fun CardTile(card: DuelCardSnapshot, compact: Boolean) {
                 maxLines = 2,
                 minLines = 2,
             )
-            if (!card.hidden && card.currentAttack != null) {
+            if (showVisibility) {
+                Text(
+                    if (card.revealed) "공개 상태" else "비공개 상태",
+                    color = if (card.revealed) DuelAccent else DuelMuted,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            } else if (!card.hidden && card.currentAttack != null) {
                 Text("공격력 ${card.currentAttack}", color = DuelAccent, fontSize = 10.sp)
             } else if (!card.hidden && card.type != null) {
                 Text(card.type, color = DuelMuted, fontSize = 9.sp)

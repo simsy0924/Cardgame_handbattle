@@ -73,9 +73,9 @@ fun AiDuelSetupScreen(
             Text("HAND BATTLE", color = AiSetupAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
             Text("AI 대전", color = Color.White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
             Text("앱의 덱 편집창에서 AI 덱을 만들고 대전을 시작하세요. 게임은 이 앱 화면에서 진행됩니다.", color = AiSetupMuted, fontSize = 15.sp)
-            Text("AI는 MCP 도구로 플레이합니다. GPT 또는 Claude 대화를 열고 앱에서 복사한 연결 안내를 붙여넣으세요.", color = AiSetupMuted, fontSize = 13.sp)
+            Text("연결된 GPT 또는 Claude 대화에 안내를 붙여넣고 Hand Battle 도구로 플레이하세요.", color = AiSetupMuted, fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = onBack, enabled = !isBusy) { Text("돌아가기") }
+            OutlinedButton(onClick = onBack) { Text("나가기") }
         }
 
         Column(
@@ -133,6 +133,7 @@ fun AiDuelSetupScreen(
 @Composable
 fun AiDuelScreen(
     session: AiDuelSession,
+    cards: List<DeckCard>,
     match: AiDuelMatch?,
     connectionStatus: String,
     statusMessage: String,
@@ -144,14 +145,14 @@ fun AiDuelScreen(
     val clipboard = LocalClipboardManager.current
     val mcpUrl = BuildConfig.AI_DUEL_SERVER_URL.trimEnd('/') + "/mcp"
     val connectionInfo = if (session.aiName == "GPT") {
-        "ChatGPT의 Hand Battle AI Duel 도구"
+        "ChatGPT에 연결된 Hand Battle AI Duel MCP 도구"
     } else {
-        "Claude MCP: " + mcpUrl
+        "Claude MCP 서버: " + mcpUrl
     }
     val prompt = remember(session.gameCode, session.aiName, mcpUrl) {
         listOf(
             "Hand Battle AI 대전을 진행해줘.",
-            "GPT라면 Hand Battle AI Duel 도구를, Claude라면 " + mcpUrl + " MCP 서버를 사용해.",
+            "연결된 AI 도구로 대전해. Claude라면 " + mcpUrl + " MCP 서버를 사용해.",
             "내 대전 코드: " + session.gameCode,
             "너는 AI 플레이어 B야. 먼저 get_game_rules와 get_card_catalog을 확인하고, get_duel_state와 get_legal_actions로 상태를 확인해.",
             "합법 행동만 duel_action으로 하나씩 실행하고, 내가 앱에서 행동할 때까지 기다려.",
@@ -188,6 +189,8 @@ fun AiDuelScreen(
         onLeave = onLeave,
         aiDuelProvider = session.aiName,
         aiDuelConnectionInfo = connectionInfo,
+        cards = cards,
+        aiToolSeen = match?.aiToolSeen,
         onCopyAiDuelInstructions = { clipboard.setText(AnnotatedString(prompt)) },
         onRefresh = onRefresh,
     )

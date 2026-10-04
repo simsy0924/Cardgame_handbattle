@@ -32,9 +32,12 @@ data class RoomSnapshot(
 
 data class DuelCardSnapshot(
     val uid: String?,
+    val cardId: String? = null,
     val name: String?,
     val type: String?,
     val currentAttack: Int?,
+    val description: String? = null,
+    val revealed: Boolean = false,
     val hidden: Boolean,
 )
 
@@ -417,9 +420,12 @@ object RoomApi {
             cards.optJSONObject(index)?.let { card ->
                 DuelCardSnapshot(
                     uid = if (card.isNull("uid")) null else card.optString("uid").takeIf { it.isNotBlank() },
+                    cardId = if (card.isNull("id")) null else card.optString("id").takeIf { it.isNotBlank() },
                     name = if (card.isNull("name")) null else card.optString("name").takeIf { it.isNotBlank() },
                     type = if (card.isNull("type")) null else card.optString("type").takeIf { it.isNotBlank() },
                     currentAttack = if (card.isNull("currentAttack")) null else card.optInt("currentAttack"),
+                    description = if (card.isNull("description")) null else card.optString("description").takeIf { it.isNotBlank() },
+                    revealed = card.optBoolean("revealed", false),
                     hidden = card.optBoolean("hidden", false),
                 )
             }
