@@ -47,6 +47,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "ROOM_SERVER_URL", "\"https://handbattle-game-server.simsy0924.workers.dev\"")
+        buildConfigField("String", "AI_DUEL_SERVER_URL", "\"https://hand-battle-ai-mcp.onrender.com\"")
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"cardgame-1b151\"")
     }
 

@@ -1,21 +1,7 @@
-import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 import { MatchError } from "./game-store.mjs";
 
-const WEB_ROOT = resolve(fileURLToPath(new URL("../web/", import.meta.url)));
 const MAX_BODY_BYTES = 1024 * 1024;
-const MIME_TYPES = {
-  ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
-  ".ico": "image/x-icon",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
-  ".svg": "image/svg+xml",
-};
 
 function json(res, status, value) {
   const body = JSON.stringify(value);
@@ -262,27 +248,6 @@ export function handleMcpMessage(store, message) {
   };
 }
 
-async function serveStatic(pathname, res) {
-  let relative = decodeURIComponent(pathname);
-  if (relative === "/") relative = "/index.html";
-  if (relative.includes("\0")) return false;
-  const file = resolve(WEB_ROOT, "." + relative);
-  if (file !== WEB_ROOT && !file.startsWith(WEB_ROOT + sep)) return false;
-  try {
-    const info = await stat(file);
-    if (!info.isFile()) return false;
-    res.writeHead(200, {
-      "Content-Type": MIME_TYPES[extname(file)] || "application/octet-stream",
-      "Content-Length": info.size,
-      "Cache-Control": extname(file) === ".html" ? "no-cache" : "public, max-age=300",
-    });
-    createReadStream(file).pipe(res);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function createHttpServer({ store, origins = allowedOrigins() }) {
   return createServer(async (req, res) => {
     setCommonHeaders(req, res, origins);
@@ -330,7 +295,6 @@ export function createHttpServer({ store, origins = allowedOrigins() }) {
           return;
         }
       }
-      if (req.method === "GET" && await serveStatic(requestUrl.pathname, res)) return;
       json(res, 404, { error: { code: "not_found", message: "요청한 경로를 찾을 수 없습니다." } });
     } catch (error) {
       const status = error instanceof MatchError ? error.status : 400;

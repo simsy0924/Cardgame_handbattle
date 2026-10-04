@@ -8,7 +8,7 @@ import {
   executeDuelCommand,
   validatePlayerDeck,
 } from "../../server/src/duel.js";
-import { normalizeDeckFile } from "../web/deck-format.mjs";
+import { normalizeDeckFile } from "./deck-format.mjs";
 
 const DEFINITIONS = new Map(CARD_DEFINITIONS.map((card) => [card.id, card]));
 const DISPLAY_DEFINITIONS = new Map(displayCatalog.cards.map((card) => [card.id, card]));
