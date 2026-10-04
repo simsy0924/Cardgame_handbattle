@@ -209,11 +209,10 @@ fun RoomLobbyScreen(
                 }
                 OutlinedButton(
                     onClick = onLeave,
-                    enabled = isSignedIn && !isBusy,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                 ) {
-                    Text("방 나가기")
+                    Text("나가기")
                 }
             }
         }
