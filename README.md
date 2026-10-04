@@ -18,9 +18,7 @@ Hand Battle is being rebuilt as an Android online 1v1 card game. The old web cli
 - **Security:** the Worker verifies the Firebase ID token. Clients send commands and receive filtered snapshots; they never write canonical game state.
 - **Billing:** no Firebase Cloud Functions, Firebase Realtime Database, or paid Cloudflare plan for the MVP. Cloudflare Free has hard quotas; when a quota is reached, requests fail until it resets instead of automatically becoming paid usage.
 
-The current app is still the online lobby shell. Sign-in, room operations, and live synchronization are not connected yet.
-
-The current app is the online lobby shell. Room creation, joining, sign-in, and live synchronization are not connected yet; the buttons stay disabled until the online service is implemented.
+The first server slice is implemented in [`server/`](server/): room creation, second-seat joining, seat-token reconnection, ready state, and filtered WebSocket lobby snapshots. The server is not deployed and the Android UI is not connected yet; both lobby buttons remain disabled until Firebase Google sign-in is configured and a Worker URL is available.
 
 ## Game rules currently recorded
 
@@ -48,4 +46,9 @@ app/src/main/java/com/simsy/handbattle/
   MainActivity.kt
   game/CardRules.kt
   online/RoomCode.kt
+server/
+  src/index.js
+  src/room.js
+  src/firebase-auth.js
+  test/
 ```
