@@ -65,7 +65,7 @@ function textResult(value, { isError = false } = {}) {
 
 const GAME_CODE_SCHEMA = {
   type: "string",
-  description: "사이트에서 대전을 시작한 뒤 받은 32자리 대전 코드",
+  description: "앱에서 AI 대전을 시작한 뒤 받은 32자리 대전 코드",
   minLength: 32,
   maxLength: 32,
 };
@@ -150,7 +150,7 @@ function toolCall(store, name, args) {
         choiceValues: args.choice_values,
       });
       return {
-        message: "AI 행동을 처리했습니다. 사용자에게 선택을 요청하는 중이면 사이트에서 상태를 확인하세요.",
+        message: "AI 행동을 처리했습니다. 사용자에게 선택을 요청하는 중이면 앱에서 상태를 확인하세요.",
         state: updated,
       };
     }
