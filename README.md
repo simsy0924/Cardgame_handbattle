@@ -1,32 +1,41 @@
 # Hand Battle
 
-새 Android 앱으로 시작하는 Hand Battle 프로젝트입니다. 기존 웹 화면과 기존 카드 효과 코드는 새 구현에 포함하지 않았습니다.
+Hand Battle is being rebuilt as an Android online 1v1 card game. The old web client and card effects are not part of this codebase.
 
-## 현재 기반
+## Online game direction
 
-- Kotlin + Jetpack Compose Android 앱
-- 모바일 가로 화면
-- 먼저 완성할 목표: 로컬 2인 대전
-- 본덱 40–60장, 카드별 최대 4장
-- 첫 패: 선공 6장, 후공 7장
-- 승리 조건: 상대 패를 0장으로 만들기
-- 카드 표시 문구와 효과 데이터 분리
+- Private rooms use a four-digit invitation code.
+- A player can reconnect to their seat after a temporary disconnect.
+- The server owns the match state and validates every game action.
+- The app sends action requests and observes sanitized room snapshots; it never writes match state directly.
+- Firebase Authentication and Realtime Database are the planned account and live-room services. New room data uses `handbattleV2/rooms`.
 
-현재 화면은 새 앱 셸이고, 대전 기능은 아직 연결하지 않았습니다. 규칙과 카드 효과를 작은 단위로 구현하면서 기능을 추가합니다.
+The current app is the online lobby shell. Room creation, joining, sign-in, and live synchronization are not connected yet; the buttons stay disabled until the online service is implemented.
 
-## 빌드
+## Game rules currently recorded
 
-JDK 17, Android SDK API 37, Android Gradle Plugin 9.4.0 및 Gradle 9.6.0이 필요합니다. Android Studio에서 프로젝트를 열거나, 환경이 준비된 뒤 다음 명령으로 디버그 APK를 만들 수 있습니다. GitHub Actions는 테스트와 디버그 APK 빌드를 실행하고 결과 APK를 아티팩트로 보관합니다.
+- Main deck: 40–60 cards, up to 4 copies of one card.
+- Opening hand: first player 6 cards, second player 7 cards.
+- The second player draws at the start of their first turn.
+- Win by reducing the opponent's hand to zero cards.
+- Display text is kept separate from executable effect data.
+
+## Build
+
+JDK 17, Android SDK API 37, Android Gradle Plugin 9.4.0, and Gradle 9.6.0 are used. Open the project in Android Studio or run:
 
 ```bash
-gradle :app:assembleDebug
 gradle :app:testDebugUnitTest
+gradle :app:assembleDebug
 ```
 
-## 구조
+GitHub Actions runs unit tests and builds a debug APK on pushes and pull requests.
+
+## Source layout
 
 ```text
 app/src/main/java/com/simsy/handbattle/
   MainActivity.kt
   game/CardRules.kt
+  online/RoomCode.kt
 ```
