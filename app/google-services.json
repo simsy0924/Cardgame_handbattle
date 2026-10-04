@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "179779519297",
+    "firebase_url": "https://cardgame-1b151-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "cardgame-1b151",
+    "storage_bucket": "cardgame-1b151.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:179779519297:android:5a7db7e35ddaa3319e57c0",
+        "android_client_info": {
+          "package_name": "com.simsy.handbattle"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "179779519297-0j59m1hjln0dg0qcb8phn5uqlglcbogv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhLyc9lCx4tINsICpEy8m6JLD-nXnisio"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "179779519297-0j59m1hjln0dg0qcb8phn5uqlglcbogv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
