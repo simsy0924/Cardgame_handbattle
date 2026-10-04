@@ -1,7 +1,5 @@
 package com.simsy.handbattle
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,13 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simsy.handbattle.ai.AiDuelDeck
-import com.simsy.handbattle.ai.AiDuelDeckParser
 import com.simsy.handbattle.ai.AiDuelMatch
 import com.simsy.handbattle.ai.AiDuelSession
 import com.simsy.handbattle.deck.DeckCard
@@ -55,29 +51,17 @@ private val AiSetupMuted = Color(0xFF9AA3B4)
 fun AiDuelSetupScreen(
     cards: List<DeckCard>,
     humanDeck: PlayerDeck,
+    aiDeck: AiDuelDeck?,
     isBusy: Boolean,
     statusMessage: String,
     onBack: () -> Unit,
+    onEditAiDeck: () -> Unit,
     onStart: (AiDuelDeck, String) -> Unit,
 ) {
-    var selectedDeck by remember { mutableStateOf<AiDuelDeck?>(null) }
     var selectedAiName by remember { mutableStateOf("GPT") }
-    var importMessage by remember { mutableStateOf("") }
     val humanDeckErrors = remember(humanDeck, cards) { DeckRules.validate(humanDeck, cards) }
-    val context = LocalContext.current
-    val deckPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            try {
-                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                    ?: throw IllegalArgumentException("AI 덱 파일을 열지 못했습니다.")
-                if (bytes.size > MAX_DECK_FILE_BYTES) throw IllegalArgumentException("AI 덱 JSON은 1MB 이하로 선택하세요.")
-                selectedDeck = AiDuelDeckParser.parse(String(bytes, Charsets.UTF_8), cards)
-                importMessage = "AI 덱을 가져왔습니다."
-            } catch (error: Exception) {
-                selectedDeck = null
-                importMessage = error.localizedMessage ?: "AI 덱 파일을 읽지 못했습니다."
-            }
-        }
+    val aiDeckErrors = remember(aiDeck, cards) {
+        aiDeck?.let { DeckRules.validate(it.cards, cards) } ?: emptyList()
     }
 
     Row(
@@ -88,7 +72,7 @@ fun AiDuelSetupScreen(
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("HAND BATTLE", color = AiSetupAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
             Text("AI 대전", color = Color.White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
-            Text("AI 덱 JSON을 가져와 대전을 시작하세요. 게임은 이 앱 화면에서 진행됩니다.", color = AiSetupMuted, fontSize = 15.sp)
+            Text("앱의 덱 편집창에서 AI 덱을 만들고 대전을 시작하세요. 게임은 이 앱 화면에서 진행됩니다.", color = AiSetupMuted, fontSize = 15.sp)
             Text("AI는 MCP 도구로 플레이합니다. GPT 또는 Claude 대화를 열고 앱에서 복사한 연결 안내를 붙여넣으세요.", color = AiSetupMuted, fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onBack, enabled = !isBusy) { Text("돌아가기") }
@@ -120,21 +104,23 @@ fun AiDuelSetupScreen(
                 }
             }
             OutlinedButton(
-                onClick = { deckPicker.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                onClick = onEditAiDeck,
                 enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (selectedDeck == null) "AI 덱 JSON 가져오기" else "다른 덱 선택")
+                Text(if (aiDeck == null) "AI 덱 만들기" else "AI 덱 편집")
             }
-            selectedDeck?.let { imported ->
-                Text(imported.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text("메인 " + imported.cards.main.size + "장 · 키 카드 " + imported.cards.key.size + "장", color = AiSetupAccent, fontSize = 12.sp)
-            } ?: Text("메인 40~60장, 같은 카드 최대 4장, 키 카드 최대 10장 조건의 JSON 파일을 선택하세요.", color = AiSetupMuted, fontSize = 12.sp, lineHeight = 17.sp)
-            if (importMessage.isNotBlank()) Text(importMessage, color = if (selectedDeck != null) AiSetupAccent else Color(0xFFFFB4AB), fontSize = 12.sp)
+            aiDeck?.let { deck ->
+                Text(deck.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("메인 " + deck.cards.main.size + "장 · 키 카드 " + deck.cards.key.size + "장", color = AiSetupAccent, fontSize = 12.sp)
+                aiDeckErrors.firstOrNull()?.let { error ->
+                    Text("AI 덱을 수정해야 합니다: " + error, color = Color(0xFFFFB4AB), fontSize = 12.sp)
+                }
+            } ?: Text("AI 덱 편집창에서 카드와 매수를 정하세요. 메인 40~60장, 같은 카드 최대 4장, 키 카드 최대 10장까지 넣을 수 있습니다.", color = AiSetupMuted, fontSize = 12.sp, lineHeight = 17.sp)
             if (statusMessage.isNotBlank()) Text(statusMessage, color = if (isBusy) AiSetupMuted else Color(0xFFFFB4AB), fontSize = 12.sp, lineHeight = 17.sp)
             Button(
-                onClick = { selectedDeck?.let { onStart(it, selectedAiName) } },
-                enabled = selectedDeck != null && humanDeckErrors.isEmpty() && !isBusy,
+                onClick = { aiDeck?.let { onStart(it, selectedAiName) } },
+                enabled = aiDeck != null && aiDeckErrors.isEmpty() && humanDeckErrors.isEmpty() && !isBusy,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = AiSetupAccent, disabledContainerColor = Color(0xFF343A46)),
             ) {
@@ -207,4 +193,3 @@ fun AiDuelScreen(
     )
 }
 
-private const val MAX_DECK_FILE_BYTES = 1024 * 1024
