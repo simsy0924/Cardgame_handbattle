@@ -8,6 +8,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.HANDBATTLE_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.HANDBATTLE_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.HANDBATTLE_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.HANDBATTLE_KEY_PASSWORD }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -26,6 +31,15 @@ jobs:
       - name: Add API 37 platform lookup path
         run: ln -s android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
 
+      - name: Configure persistent APK signing key
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/hand-battle-debug.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/hand-battle-debug.keystore" >> "$GITHUB_ENV"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
@@ -33,6 +47,9 @@ jobs:
 
       - name: Run unit tests and build the debug APK
         run: gradle :app:testDebugUnitTest :app:assembleDebug
+
+      - name: Verify APK signature
+        run: "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v5
