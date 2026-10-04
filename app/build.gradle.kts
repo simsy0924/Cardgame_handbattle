@@ -9,7 +9,34 @@ if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
+val ciSigningStorePath = System.getenv("ANDROID_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+val ciSigningStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val ciSigningKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+val ciSigningKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+
 android {
+    if (ciSigningStorePath != null) {
+        signingConfigs {
+            create("ci") {
+                storeFile = file(ciSigningStorePath)
+                storePassword = ciSigningStorePassword
+                    ?: throw GradleException("ANDROID_KEYSTORE_PASSWORD is required when CI signing is enabled.")
+                keyAlias = ciSigningKeyAlias
+                    ?: throw GradleException("ANDROID_KEY_ALIAS is required when CI signing is enabled.")
+                keyPassword = ciSigningKeyPassword
+                    ?: throw GradleException("ANDROID_KEY_PASSWORD is required when CI signing is enabled.")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            if (ciSigningStorePath != null) {
+                signingConfig = signingConfigs.getByName("ci")
+            }
+        }
+    }
+
     namespace = "com.simsy.handbattle"
     compileSdk = 37
 
