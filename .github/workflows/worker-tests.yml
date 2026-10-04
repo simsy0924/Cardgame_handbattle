@@ -1,0 +1,28 @@
+name: Online server tests
+
+on:
+  push:
+    paths:
+      - 'server/**'
+      - '.github/workflows/worker-tests.yml'
+  pull_request:
+    paths:
+      - 'server/**'
+      - '.github/workflows/worker-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Run server tests
+        working-directory: server
+        run: npm test
