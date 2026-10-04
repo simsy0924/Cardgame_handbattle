@@ -13,11 +13,12 @@ Every route except `GET /health` requires `Authorization: Bearer <Firebase ID to
 | `POST /v1/rooms/{code}/reconnect` with `X-Seat-Token` | Restore the same player's seat after disconnecting. |
 | `GET /v1/rooms/{code}/state` with `X-Seat-Token` | Read the caller's room snapshot. |
 | `POST /v1/rooms/{code}/ready` with `X-Seat-Token` and `{"ready":true}` | Change the caller's ready state. |
+| `POST /v1/rooms/{code}/leave` with `X-Seat-Token` | Leave the room and release the caller's seat. |
 | `GET /v1/rooms/{code}/stream` with `X-Seat-Token` and WebSocket upgrade | Receive lobby snapshots. WebSocket commands currently support `ping` and `ready`. |
 
-Seat tokens are random, room-scoped credentials. The server stores only their SHA-256 hashes. The Android app currently keeps the returned token in memory; any persisted value should use the app's private storage. Send it only over HTTPS/WSS. A room expires after 24 hours without an authenticated room action.
+Seat tokens are random, room-scoped credentials. The server stores only their SHA-256 hashes. The Android app stores its seat token in app-private storage and sends it only over HTTPS/WSS. A room expires after 24 hours without an authenticated room action.
 
-The service currently implements room creation, joining, reconnection, ready state, and live lobby snapshots. It does not yet start a match or accept card-game actions; those must be added after the game state and action rules are finalized.
+The service implements room creation, joining, leaving, reconnection, ready state, and live lobby snapshots. It does not start a match or accept card-game actions.
 
 ## Test
 

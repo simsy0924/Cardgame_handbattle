@@ -160,6 +160,45 @@ describe("online room API", () => {
     assert.equal((await json(finalReady)).room.phase, "ready");
   });
 
+  it("lets a player leave and releases that seat for the next opponent", async () => {
+    const { worker, env } = setup();
+    const created = await json(await worker.fetch(apiRequest("/v1/rooms", {
+      method: "POST",
+      body: {},
+    }), env));
+    const roomPath = `/v1/rooms/${created.roomCode}`;
+    const guest = await json(await worker.fetch(apiRequest(`${roomPath}/join`, {
+      method: "POST",
+      token: "second",
+      body: {},
+    }), env));
+
+    const leave = await worker.fetch(apiRequest(`${roomPath}/leave`, {
+      method: "POST",
+      seatToken: created.seatToken,
+      body: {},
+    }), env);
+    assert.equal(leave.status, 200);
+    assert.deepEqual(await json(leave), { left: true });
+
+    const state = await worker.fetch(apiRequest(`${roomPath}/state`, {
+      token: "second",
+      seatToken: guest.seatToken,
+    }), env);
+    const updated = await json(state);
+    assert.equal(updated.room.players[0], null);
+    assert.equal(updated.room.players[1].displayName, "Two");
+    assert.equal(updated.room.phase, "waiting");
+
+    const replacement = await worker.fetch(apiRequest(`${roomPath}/join`, {
+      method: "POST",
+      token: "third",
+      body: {},
+    }), env);
+    assert.equal(replacement.status, 200);
+    assert.equal((await json(replacement)).seat, 0);
+  });
+
   it("does not authenticate health checks and rejects protected requests without a token", async () => {
     const { worker, env } = setup();
     const health = await worker.fetch(new Request("https://worker.test/health"), env);

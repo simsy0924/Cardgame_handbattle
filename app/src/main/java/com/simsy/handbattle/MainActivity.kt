@@ -48,8 +48,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.simsy.handbattle.online.RoomApi
+import com.simsy.handbattle.online.RoomApiException
 import com.simsy.handbattle.online.RoomCode
 import com.simsy.handbattle.online.RoomSession
+import com.simsy.handbattle.online.RoomSessionResult
+import com.simsy.handbattle.online.RoomSessionStore
+import com.simsy.handbattle.online.RoomSnapshot
+import okhttp3.WebSocket
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -71,14 +76,38 @@ class MainActivity : ComponentActivity() {
     private var statusMessage by mutableStateOf("")
     private var isBusy by mutableStateOf(false)
     private var roomSession by mutableStateOf<RoomSession?>(null)
+    private var roomSnapshot by mutableStateOf<RoomSnapshot?>(null)
+    private var roomConnectionStatus by mutableStateOf("연결 안 됨")
+    private var roomActionBusy by mutableStateOf(false)
+    private var isRoomConnecting by mutableStateOf(false)
+    private var roomStream: WebSocket? = null
+    private var roomStreamGeneration = 0
+    private val roomSessionStore by lazy { RoomSessionStore(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        roomSession = roomSessionStore.load()
+        if (roomSession != null) roomConnectionStatus = "대기실 연결 복구 중…"
         configureFirebase()
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Background) {
-                    OnlineStartScreen(
+                    val activeRoomSession = roomSession
+                    if (activeRoomSession != null) {
+                        RoomLobbyScreen(
+                            session = activeRoomSession,
+                            snapshot = roomSnapshot,
+                            connectionStatus = roomConnectionStatus,
+                            statusMessage = statusMessage,
+                            isSignedIn = currentUser != null,
+                            isBusy = isBusy || roomActionBusy || isRoomConnecting,
+                            onSignIn = ::signInWithGoogle,
+                            onReadyChange = ::setReady,
+                            onReconnect = ::reconnectRoom,
+                            onLeave = ::leaveRoom,
+                        )
+                    } else {
+                        OnlineStartScreen(
                         currentUser = currentUser,
                         signInEnabled = firebaseAuth != null && googleClientId.isNotBlank() && !isBusy,
                         roomActionsEnabled = currentUser != null && !isBusy,
@@ -90,7 +119,8 @@ class MainActivity : ComponentActivity() {
                         onSignOut = ::signOut,
                         onCreateRoom = ::createRoom,
                         onJoinRoom = ::joinRoom,
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -99,11 +129,19 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         authStateListener?.let { listener -> firebaseAuth?.addAuthStateListener(listener) }
+        if (firebaseAuth?.currentUser != null && roomSession != null && roomStream == null) {
+            reconnectRoom()
+        }
     }
 
     override fun onStop() {
         authStateListener?.let { listener -> firebaseAuth?.removeAuthStateListener(listener) }
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        closeRoomStream()
+        super.onDestroy()
     }
 
     private fun configureFirebase() {
@@ -123,7 +161,10 @@ class MainActivity : ComponentActivity() {
 
         firebaseAuth = FirebaseAuth.getInstance(app)
         currentUser = firebaseAuth?.currentUser
-        authStateListener = FirebaseAuth.AuthStateListener { auth -> currentUser = auth.currentUser }
+        authStateListener = FirebaseAuth.AuthStateListener { auth ->
+            currentUser = auth.currentUser
+            if (currentUser != null && roomSession != null && roomStream == null) reconnectRoom()
+        }
 
         val clientIdResource = resources.getIdentifier("default_web_client_id", "string", packageName)
         googleClientId = if (clientIdResource == 0) "" else getString(clientIdResource)
@@ -166,8 +207,12 @@ class MainActivity : ComponentActivity() {
                         isBusy = false
                         if (task.isSuccessful) {
                             currentUser = auth.currentUser
-                            roomSession = null
-                            statusMessage = "Google 로그인에 성공했습니다. 새 방을 만들거나 초대 코드로 참가하세요."
+                            if (roomSession == null) {
+                                statusMessage = "Google 로그인에 성공했습니다. 새 방을 만들거나 초대 코드로 참가하세요."
+                            } else {
+                                statusMessage = "로그인에 성공했습니다. 저장된 대기실에 다시 연결합니다."
+                                reconnectRoom()
+                            }
                         } else {
                             val detail = task.exception?.localizedMessage
                             statusMessage = if (detail.isNullOrBlank()) {
@@ -193,9 +238,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun signOut() {
+        closeRoomStream()
+        roomSessionStore.clear()
         firebaseAuth?.signOut()
         currentUser = null
         roomSession = null
+        roomSnapshot = null
+        roomConnectionStatus = "연결 안 됨"
         statusMessage = "로그아웃했습니다."
         lifecycleScope.launch {
             try {
@@ -222,7 +271,193 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun performRoomRequest(request: (idToken: String, displayName: String) -> RoomSession) {
+    private fun setReady(ready: Boolean) {
+        val session = roomSession ?: return
+        val user = firebaseAuth?.currentUser
+        if (user == null) {
+            statusMessage = "대기실에 연결하려면 Google 계정으로 로그인하세요."
+            return
+        }
+        if (roomActionBusy || isRoomConnecting) return
+        roomActionBusy = true
+        user.getIdToken(false)
+            .addOnSuccessListener { tokenResult ->
+                val idToken = tokenResult.token
+                if (idToken.isNullOrBlank()) {
+                    roomActionBusy = false
+                    statusMessage = "Firebase 인증 토큰을 가져오지 못했습니다."
+                    return@addOnSuccessListener
+                }
+                lifecycleScope.launch {
+                    try {
+                        val snapshot = withContext(Dispatchers.IO) {
+                            RoomApi.setReady(BuildConfig.ROOM_SERVER_URL, idToken, session, ready)
+                        }
+                        publishRoomSnapshot(snapshot)
+                        statusMessage = ""
+                    } catch (error: Exception) {
+                        statusMessage = error.localizedMessage ?: "준비 상태를 변경하지 못했습니다."
+                    } finally {
+                        roomActionBusy = false
+                    }
+                }
+            }
+            .addOnFailureListener { error ->
+                roomActionBusy = false
+                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+            }
+    }
+
+    private fun reconnectRoom() {
+        val session = roomSession ?: return
+        val user = firebaseAuth?.currentUser
+        if (user == null) {
+            roomConnectionStatus = "Google 로그인 필요"
+            statusMessage = "저장된 대기실에 다시 연결하려면 Google 계정으로 로그인하세요."
+            return
+        }
+        if (isRoomConnecting) return
+        isRoomConnecting = true
+        roomConnectionStatus = "방 연결 복구 중…"
+        user.getIdToken(false)
+            .addOnSuccessListener { tokenResult ->
+                val idToken = tokenResult.token
+                if (idToken.isNullOrBlank()) {
+                    isRoomConnecting = false
+                    roomConnectionStatus = "연결 복구 실패"
+                    statusMessage = "Firebase 인증 토큰을 가져오지 못했습니다."
+                    return@addOnSuccessListener
+                }
+                lifecycleScope.launch {
+                    try {
+                        val snapshot = withContext(Dispatchers.IO) {
+                            RoomApi.reconnectRoom(BuildConfig.ROOM_SERVER_URL, idToken, session)
+                        }
+                        publishRoomSnapshot(snapshot)
+                        statusMessage = ""
+                        openRoomStream(session, idToken)
+                    } catch (error: RoomApiException) {
+                        roomConnectionStatus = "연결 복구 실패"
+                        statusMessage = error.localizedMessage ?: "대기실 연결을 복구하지 못했습니다."
+                        if (error.errorCode == "room_not_found" || error.errorCode == "invalid_seat_token") {
+                            closeRoomStream()
+                            roomSessionStore.clear()
+                            roomSession = null
+                            roomSnapshot = null
+                        }
+                    } catch (error: Exception) {
+                        roomConnectionStatus = "연결 복구 실패"
+                        statusMessage = error.localizedMessage ?: "대기실 연결을 복구하지 못했습니다."
+                    } finally {
+                        isRoomConnecting = false
+                    }
+                }
+            }
+            .addOnFailureListener { error ->
+                isRoomConnecting = false
+                roomConnectionStatus = "연결 복구 실패"
+                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+            }
+    }
+
+    private fun leaveRoom() {
+        val session = roomSession ?: return
+        val user = firebaseAuth?.currentUser
+        if (user == null) {
+            statusMessage = "방을 나가려면 Google 계정에 연결해야 합니다."
+            return
+        }
+        if (roomActionBusy || isRoomConnecting) return
+        roomActionBusy = true
+        user.getIdToken(false)
+            .addOnSuccessListener { tokenResult ->
+                val idToken = tokenResult.token
+                if (idToken.isNullOrBlank()) {
+                    roomActionBusy = false
+                    statusMessage = "Firebase 인증 토큰을 가져오지 못했습니다."
+                    return@addOnSuccessListener
+                }
+                lifecycleScope.launch {
+                    try {
+                        withContext(Dispatchers.IO) {
+                            RoomApi.leaveRoom(BuildConfig.ROOM_SERVER_URL, idToken, session)
+                        }
+                        roomSessionStore.clear()
+                        roomSession = null
+                        roomSnapshot = null
+                        closeRoomStream()
+                        roomConnectionStatus = "연결 안 됨"
+                        statusMessage = "대기실에서 나왔습니다."
+                    } catch (error: RoomApiException) {
+                        if (error.errorCode == "room_not_found" || error.errorCode == "invalid_seat_token") {
+                            roomSessionStore.clear()
+                            roomSession = null
+                            roomSnapshot = null
+                            closeRoomStream()
+                        }
+                        statusMessage = error.localizedMessage ?: "대기실에서 나가지 못했습니다."
+                    } catch (error: Exception) {
+                        statusMessage = error.localizedMessage ?: "대기실에서 나가지 못했습니다."
+                    } finally {
+                        roomActionBusy = false
+                    }
+                }
+            }
+            .addOnFailureListener { error ->
+                roomActionBusy = false
+                statusMessage = error.localizedMessage ?: "Firebase 인증 토큰을 가져오지 못했습니다."
+            }
+    }
+
+    private fun openRoomStream(session: RoomSession, idToken: String) {
+        closeRoomStream()
+        val generation = roomStreamGeneration
+        roomConnectionStatus = "실시간 방 연결 중…"
+        roomStream = RoomApi.openRoomStream(
+            serverUrl = BuildConfig.ROOM_SERVER_URL,
+            idToken = idToken,
+            session = session,
+            onConnected = {
+                runOnUiThread {
+                    if (generation == roomStreamGeneration && roomSession == session) {
+                        roomConnectionStatus = "실시간 연결됨"
+                        statusMessage = ""
+                    }
+                }
+            },
+            onSnapshot = { snapshot ->
+                runOnUiThread {
+                    if (generation == roomStreamGeneration && roomSession == session) {
+                        publishRoomSnapshot(snapshot)
+                        roomConnectionStatus = "실시간 연결됨"
+                    }
+                }
+            },
+            onDisconnected = { reason ->
+                runOnUiThread {
+                    if (generation == roomStreamGeneration && roomSession == session) {
+                        roomStream = null
+                        roomConnectionStatus = "연결 끊김"
+                        if (reason.isNotBlank()) statusMessage = reason
+                    }
+                }
+            },
+        )
+    }
+
+    private fun closeRoomStream() {
+        roomStreamGeneration += 1
+        roomStream?.close(1000, "Leaving room")
+        roomStream = null
+    }
+
+    private fun publishRoomSnapshot(snapshot: RoomSnapshot) {
+        if (snapshot.roomCode != roomSession?.roomCode) return
+        val current = roomSnapshot
+        if (current == null || snapshot.sequence >= current.sequence) roomSnapshot = snapshot
+    }
+
+    private fun performRoomRequest(request: (idToken: String, displayName: String) -> RoomSessionResult) {
         val user = firebaseAuth?.currentUser
         if (user == null) {
             statusMessage = "먼저 Google 계정으로 로그인하세요."
@@ -243,13 +478,13 @@ class MainActivity : ComponentActivity() {
                     ?: "Player"
                 lifecycleScope.launch {
                     try {
-                        val session = withContext(Dispatchers.IO) { request(idToken, displayName) }
-                        roomSession = session
-                        statusMessage = if (session.phase == "waiting") {
-                            "방 연결 완료. 이 코드를 상대에게 알려주세요."
-                        } else {
-                            "방에 연결했습니다."
-                        }
+                        val result = withContext(Dispatchers.IO) { request(idToken, displayName) }
+                        roomSession = result.session
+                        roomSnapshot = result.snapshot
+                        roomSessionStore.save(result.session)
+                        roomConnectionStatus = "실시간 방 연결 중…"
+                        statusMessage = "방에 연결했습니다. 상대에게 방 코드 ${result.session.roomCode}를 알려주세요."
+                        openRoomStream(result.session, idToken)
                     } catch (error: Exception) {
                         statusMessage = error.localizedMessage ?: "방 서버에 연결하지 못했습니다."
                     } finally {
@@ -312,7 +547,7 @@ private fun OnlineStartScreen(
             )
             Spacer(Modifier.height(24.dp))
             Text(
-                text = "서버가 방 상태를 관리합니다. 현재는 로그인, 방 생성, 참가까지 연결되어 있습니다.",
+                text = "서버가 방과 준비 상태를 관리합니다. 상대와 대기실에서 연결을 확인할 수 있습니다.",
                 color = Muted,
                 fontSize = 14.sp,
             )

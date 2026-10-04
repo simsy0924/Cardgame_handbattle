@@ -121,6 +121,8 @@ export class Room {
         return this.readState(request);
       case "POST /_internal/ready":
         return this.setReady(request);
+      case "POST /_internal/leave":
+        return this.leaveRoom(request);
       case "GET /_internal/stream":
         return this.openStream(request);
       default:
@@ -257,6 +259,38 @@ export class Room {
       await this.scheduleExpiry(room.lastActivityAt);
       await this.broadcast(room);
       return jsonResponse({ seat, room: this.snapshot(room, principal.uid) });
+    });
+  }
+
+  async leaveRoom(request) {
+    const principal = principalFrom(request);
+    const token = request.headers.get("X-Seat-Token") ?? "";
+    if (!principal) return jsonResponse({ error: "unauthorized" }, 401);
+
+    return this.serialized(async () => {
+      const room = await this.ctx.storage.get(ROOM_KEY);
+      if (!room) return jsonResponse({ error: "room_not_found" }, 404);
+      const seat = await this.findSeat(room, principal.uid, token);
+      if (seat < 0) return jsonResponse({ error: "invalid_seat_token" }, 403);
+
+      for (const socket of this.ctx.getWebSockets()) {
+        const attachment = socket.deserializeAttachment();
+        if (attachment?.uid === principal.uid) socket.close(1000, "Player left the room");
+      }
+
+      room.players[seat] = null;
+      room.phase = readyPhase(room.players);
+      room.sequence += 1;
+      room.lastActivityAt = Date.now();
+      if (room.players.every((player) => player === null)) {
+        await this.ctx.storage.delete(ROOM_KEY);
+        return jsonResponse({ left: true });
+      }
+
+      await this.ctx.storage.put(ROOM_KEY, room);
+      await this.scheduleExpiry(room.lastActivityAt);
+      await this.broadcast(room);
+      return jsonResponse({ left: true });
     });
   }
 
