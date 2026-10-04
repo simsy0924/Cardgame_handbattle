@@ -7,7 +7,6 @@ const FIRST_OPENING_HAND_SIZE = 6;
 const SECOND_OPENING_HAND_SIZE = 7;
 const MAIN_COPIES = 4;
 const KEY_DECK_MAX = 10;
-const FIELD_MAX = 5;
 
 export const CARD_DEFINITIONS = [...genericDeck.cards, ...penguinDeck];
 const DEFINITIONS = Object.fromEntries(CARD_DEFINITIONS.map((card) => [card.id, card]));
