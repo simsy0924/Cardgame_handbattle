@@ -20,6 +20,11 @@ Hand Battle is an Android online 1v1 card game. The old web client is not part o
 
 The server in [`server/`](server/) handles room creation, joining, leaving, seat-token reconnection, match state, card effects, and filtered WebSocket snapshots. When both players are ready, the Worker starts a duel. The Android app includes the live lobby and duel screen. The Worker is deployed at `https://handbattle-game-server.simsy0924.workers.dev`. Finish the Firebase Console setup in [`Firebase setup`](docs/FIREBASE_SETUP.md) and add the Android config file before testing sign-in.
 
+## AI duel
+
+- The Android app includes a native AI duel screen and a separate AI deck editor. The AI deck is saved on this device independently from your own deck.
+- Choose GPT or Claude and connect it through the Hand Battle AI Duel tool/MCP server. The Android app does not call the OpenAI API or store an API key.
+
 ## Game rules currently recorded
 
 - Main deck: 40–60 cards, up to 4 copies of one card.
