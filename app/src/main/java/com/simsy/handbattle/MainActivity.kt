@@ -913,5 +913,6 @@ private fun OnlineStartScreen(
                 fontSize = 12.sp,
                 lineHeight = 17.sp,
             )
-        }    }
+        }
+    }
 }
