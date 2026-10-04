@@ -179,4 +179,6 @@ export function createWorker(options = {}) {
   };
 }
 
+export { Room } from "./room.js";
+
 export default createWorker();
