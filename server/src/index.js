@@ -102,7 +102,7 @@ export function createWorker(options = {}) {
       }
 
       const createRoomRequest = request.method === "POST" && url.pathname === "/v1/rooms";
-      const roomMatch = /^\/v1\/rooms\/(\d{4})(?:\/(join|reconnect|state|ready|stream))?$/.exec(url.pathname);
+      const roomMatch = /^\/v1\/rooms\/(\d{4})(?:\/(join|reconnect|state|ready|leave|stream))?$/.exec(url.pathname);
       if (!createRoomRequest && !roomMatch) return jsonResponse({ error: "not_found" }, 404);
 
       const token = bearerToken(request);
@@ -165,6 +165,9 @@ export function createWorker(options = {}) {
           if (request.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
           if (typeof body.ready !== "boolean") return jsonResponse({ error: "invalid_request" }, 400);
           return forwardRoom(env, code, internalRequest("/_internal/ready", principal, { ready: body.ready }, "POST", seatToken));
+        case "leave":
+          if (request.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
+          return forwardRoom(env, code, internalRequest("/_internal/leave", principal, {}, "POST", seatToken));
         case "stream":
           if (request.method !== "GET") return jsonResponse({ error: "method_not_allowed" }, 405);
           if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
