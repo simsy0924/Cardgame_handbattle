@@ -26,13 +26,40 @@ jobs:
       - name: Add API 37 platform lookup path
         run: ln -s android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
 
+      - name: Configure persistent APK signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.HANDBATTLE_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.HANDBATTLE_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.HANDBATTLE_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.HANDBATTLE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            test -n "$ANDROID_KEYSTORE_PASSWORD"
+            test -n "$ANDROID_KEY_ALIAS"
+            test -n "$ANDROID_KEY_PASSWORD"
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/hand-battle-debug.keystore"
+            test -s "$RUNNER_TEMP/hand-battle-debug.keystore"
+            keytool -list -keystore "$RUNNER_TEMP/hand-battle-debug.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" > /dev/null
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/hand-battle-debug.keystore" >> "$GITHUB_ENV"
+          else
+            echo "No CI signing keystore configured; using the runner debug key."
+          fi
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.6.0'
 
       - name: Run unit tests and build the debug APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.HANDBATTLE_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.HANDBATTLE_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.HANDBATTLE_KEY_PASSWORD }}
         run: gradle :app:testDebugUnitTest :app:assembleDebug
+
+      - name: Verify APK signature
+        run: |
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v5
