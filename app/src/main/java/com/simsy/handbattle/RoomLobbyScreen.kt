@@ -46,7 +46,8 @@ fun RoomLobbyScreen(
     val players = snapshot?.players ?: listOf(null, null)
     val localPlayer = players.getOrNull(session.seat)
     val opponent = players.getOrNull(1 - session.seat)
-    val bothReady = snapshot?.phase == "ready"
+    val bothReady = snapshot?.phase == "ready" && players.all { it?.connected == true }
+    val awaitingReconnect = snapshot?.phase == "ready" && !bothReady
 
     Row(
         modifier = Modifier
@@ -118,6 +119,11 @@ fun RoomLobbyScreen(
                     color = LobbyAccent,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
+                )
+                awaitingReconnect -> Text(
+                    text = "두 플레이어가 준비했습니다. 연결 복구를 기다리는 중입니다.",
+                    color = LobbyMuted,
+                    fontSize = 13.sp,
                 )
                 opponent == null -> Text(
                     text = "상대가 참가하면 준비할 수 있습니다.",
