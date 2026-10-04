@@ -57,6 +57,7 @@ fun DeckEditorScreen(
     initialDeck: PlayerDeck,
     onSave: (PlayerDeck) -> Unit,
     onCancel: () -> Unit,
+    title: String = "덱 편집",
 ) {
     var mainCards by remember(initialDeck) { mutableStateOf(initialDeck.main) }
     var keyCards by remember(initialDeck) { mutableStateOf(initialDeck.key) }
@@ -85,7 +86,7 @@ fun DeckEditorScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column {
-                Text("덱 편집", color = EditorWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                Text(title, color = EditorWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
                 Text("카드를 눌러 공식 효과 텍스트를 확인할 수 있습니다.", color = EditorMuted, fontSize = 12.sp)
             }
             Spacer(Modifier.weight(1f))
