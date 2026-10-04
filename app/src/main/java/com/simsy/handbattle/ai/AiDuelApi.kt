@@ -240,12 +240,45 @@ class AiDuelStore(context: Context) {
             .apply()
     }
 
+    fun loadDeck(): AiDuelDeck? {
+        val main = preferences.getString(KEY_DECK_MAIN, null) ?: return null
+        val key = preferences.getString(KEY_DECK_KEY, null) ?: return null
+        return try {
+            AiDuelDeck(
+                name = preferences.getString(KEY_DECK_NAME, DEFAULT_DECK_NAME) ?: DEFAULT_DECK_NAME,
+                cards = PlayerDeck(main = parseDeckIds(main), key = parseDeckIds(key)),
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun saveDeck(deck: AiDuelDeck) {
+        preferences.edit()
+            .putString(KEY_DECK_NAME, deck.name)
+            .putString(KEY_DECK_MAIN, JSONArray(deck.cards.main).toString())
+            .putString(KEY_DECK_KEY, JSONArray(deck.cards.key).toString())
+            .apply()
+    }
+
     fun clear() {
-        preferences.edit().clear().apply()
+        preferences.edit()
+            .remove(KEY_CODE)
+            .remove(KEY_AI_NAME)
+            .apply()
+    }
+
+    private fun parseDeckIds(value: String): List<String> {
+        val array = JSONArray(value)
+        return (0 until array.length()).map { index -> array.getString(index) }
     }
 
     private companion object {
         const val KEY_CODE = "game_code"
         const val KEY_AI_NAME = "ai_name"
+        const val KEY_DECK_NAME = "ai_deck_name"
+        const val KEY_DECK_MAIN = "ai_deck_main"
+        const val KEY_DECK_KEY = "ai_deck_key"
+        const val DEFAULT_DECK_NAME = "내 AI 덱"
     }
 }
