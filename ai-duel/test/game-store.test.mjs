@@ -19,7 +19,7 @@ test("AI viewpoint keeps the human hand hidden and includes its own visible card
   const human = state.snapshot.players[0];
   const ai = state.snapshot.players[1];
 
-  assert.equal(human.hand.every((card) => card.hidden && card.name === null && card.uid === null && card.id === undefined), true);
+  assert.equal(human.hand.every((card) => card.hidden && card.name === null && card.uid === null && card.id === null), true);
   assert.equal(ai.hand.every((card) => !card.hidden && card.uid && card.id && card.description), true);
   assert.equal(state.aiName, "Test AI");
 });
