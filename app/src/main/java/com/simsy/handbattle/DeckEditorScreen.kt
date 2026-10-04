@@ -120,7 +120,7 @@ fun DeckEditorScreen(
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("키 카드 덱 (${keyCards.size})", color = if (selectedTab == 1) EditorAccent else EditorMuted) },
+                        text = { Text("키 카드 덱 (${keyCards.size}/${DeckRules.KEY_DECK_MAX})", color = if (selectedTab == 1) EditorAccent else EditorMuted) },
                     )
                 }
 
@@ -150,11 +150,11 @@ fun DeckEditorScreen(
                         DeckCardRow(
                             card = card,
                             count = count,
-                            canAdd = if (card.deck == "main") count < 4 && mainCards.size < 60 else count < 1,
+                            canAdd = if (card.deck == "main") count < 4 && mainCards.size < 60 else count < 1 && keyCards.size < DeckRules.KEY_DECK_MAX,
                             onDetails = { selectedCard = card },
                             onAdd = {
                                 if (card.deck == "main" && count < 4 && mainCards.size < 60) mainCards = mainCards + card.id
-                                if (card.deck == "key" && count == 0) keyCards = keyCards + card.id
+                                if (card.deck == "key" && count == 0 && keyCards.size < DeckRules.KEY_DECK_MAX) keyCards = keyCards + card.id
                             },
                             onRemove = {
                                 if (card.deck == "main" && count > 0) {
@@ -179,7 +179,7 @@ fun DeckEditorScreen(
             ) {
                 Text("현재 덱", color = EditorWhite, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                 Text(
-                    text = "메인 ${mainCards.size}장 / 40~60장 · 키 카드 ${keyCards.size}장",
+                    text = "메인 ${mainCards.size}장 / 40~60장 · 키 카드 ${keyCards.size}/${DeckRules.KEY_DECK_MAX}장",
                     color = EditorAccent,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,

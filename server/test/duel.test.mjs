@@ -22,7 +22,7 @@ test("starts with five cards, a shuffled shared starter deck, and a private oppo
   const game = createDuel();
   const snapshot = duelSnapshot(game, 0);
   const mainCount = CARD_DEFINITIONS.filter((card) => card.deck === "main").length;
-  const keyCount = CARD_DEFINITIONS.filter((card) => card.deck === "key").length;
+  const keyCount = defaultPlayerDeck().key.length;
 
   const firstPlayer = game.state.turn.player;
   const secondPlayer = firstPlayer === "A" ? "B" : "A";
@@ -37,16 +37,22 @@ test("starts with five cards, a shuffled shared starter deck, and a private oppo
   assert.equal(game.state.turn.number, 1);
 });
 
-test("accepts 40 to 60 main cards, at most four copies, and one copy of each key card", () => {
+test("accepts 40 to 60 main cards, at most four copies, and up to ten key cards", () => {
   const mainIds = CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 10).map((card) => card.id);
-  const legalDeck = { main: mainIds.flatMap((id) => Array(4).fill(id)), key: defaultPlayerDeck().key.slice(0, 1) };
+  const availableKeyIds = CARD_DEFINITIONS.filter((card) => card.deck === "key").map((card) => card.id);
+  const legalDeck = { main: mainIds.flatMap((id) => Array(4).fill(id)), key: availableKeyIds.slice(0, 10) };
   assert.equal(validatePlayerDeck(legalDeck).main.length, 40);
+  assert.equal(validatePlayerDeck(legalDeck).key.length, 10);
   assert.throws(
     () => validatePlayerDeck({ ...legalDeck, main: legalDeck.main.slice(1) }),
     (error) => error.code === "invalid_deck",
   );
   assert.throws(
     () => validatePlayerDeck({ ...legalDeck, main: [...legalDeck.main, mainIds[0]] }),
+    (error) => error.code === "invalid_deck",
+  );
+  assert.throws(
+    () => validatePlayerDeck({ ...legalDeck, key: availableKeyIds }),
     (error) => error.code === "invalid_deck",
   );
   assert.throws(

@@ -38,9 +38,11 @@ object DeckCardCatalog {
 }
 
 object DeckRules {
+    const val KEY_DECK_MAX = 10
+
     fun starterDeck(cards: List<DeckCard>): PlayerDeck = PlayerDeck(
         main = cards.filter { it.deck == "main" }.flatMap { card -> List(3) { card.id } },
-        key = cards.filter { it.deck == "key" }.map { it.id },
+        key = cards.filter { it.deck == "key" }.take(KEY_DECK_MAX).map { it.id },
     )
 
     fun validate(deck: PlayerDeck, cards: List<DeckCard>): List<String> {
@@ -66,6 +68,9 @@ object DeckRules {
                 card.deck != "key" -> errors += "메인 카드는 키 카드 덱에 넣을 수 없습니다. (${card.name})"
                 count > 1 -> errors += "키 카드 덱에는 같은 카드를 1장만 넣을 수 있습니다. (${card.name})"
             }
+        }
+        if (deck.key.size > KEY_DECK_MAX) {
+            errors += "키 카드 덱은 최대 ${KEY_DECK_MAX}장까지 넣을 수 있습니다. (현재 ${deck.key.size}장)"
         }
         return errors.distinct()
     }
