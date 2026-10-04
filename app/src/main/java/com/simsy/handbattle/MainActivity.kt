@@ -50,6 +50,11 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.simsy.handbattle.deck.DeckCardCatalog
 import com.simsy.handbattle.deck.DeckRules
 import com.simsy.handbattle.deck.DeckStore
+import com.simsy.handbattle.ai.AiDuelApi
+import com.simsy.handbattle.ai.AiDuelDeck
+import com.simsy.handbattle.ai.AiDuelMatch
+import com.simsy.handbattle.ai.AiDuelSession
+import com.simsy.handbattle.ai.AiDuelStore
 import com.simsy.handbattle.deck.PlayerDeck
 import com.simsy.handbattle.online.DuelActionRequest
 import com.simsy.handbattle.online.RoomApi
@@ -81,7 +86,14 @@ class MainActivity : ComponentActivity() {
     private var statusMessage by mutableStateOf("")
     private var isBusy by mutableStateOf(false)
     private var isDeckEditorOpen by mutableStateOf(false)
+    private var isAiDuelSetupOpen by mutableStateOf(false)
     private var playerDeck by mutableStateOf(PlayerDeck(emptyList(), emptyList()))
+    private var aiDuelSession by mutableStateOf<AiDuelSession?>(null)
+    private var aiDuelMatch by mutableStateOf<AiDuelMatch?>(null)
+    private var aiDuelConnectionStatus by mutableStateOf("연결 안 됨")
+    private var aiDuelStatusMessage by mutableStateOf("")
+    private var aiDuelBusy by mutableStateOf(false)
+    private var aiDuelRefreshing by mutableStateOf(false)
     private var roomSession by mutableStateOf<RoomSession?>(null)
     private var roomSnapshot by mutableStateOf<RoomSnapshot?>(null)
     private var roomConnectionStatus by mutableStateOf("연결 안 됨")
@@ -92,10 +104,13 @@ class MainActivity : ComponentActivity() {
     private val roomSessionStore by lazy { RoomSessionStore(applicationContext) }
     private val deckCardCatalog by lazy { DeckCardCatalog.load(applicationContext) }
     private val deckStore by lazy { DeckStore(applicationContext) }
+    private val aiDuelStore by lazy { AiDuelStore(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         roomSession = roomSessionStore.load()
+        aiDuelSession = aiDuelStore.load()
+        if (aiDuelSession != null) aiDuelConnectionStatus = "대전 상태 불러오는 중…"
         playerDeck = deckStore.load(deckCardCatalog)
         if (roomSession != null) roomConnectionStatus = "대기실 연결 복구 중…"
         configureFirebase()
@@ -103,6 +118,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Background) {
                     val activeRoomSession = roomSession
+                    val activeAiDuelSession = aiDuelSession
                     if (isDeckEditorOpen) {
                         DeckEditorScreen(
                             cards = deckCardCatalog,
@@ -141,6 +157,29 @@ class MainActivity : ComponentActivity() {
                                 onLeave = ::leaveRoom,
                             )
                         }
+                    } else if (activeAiDuelSession != null) {
+                        AiDuelScreen(
+                            session = activeAiDuelSession,
+                            match = aiDuelMatch,
+                            connectionStatus = aiDuelConnectionStatus,
+                            statusMessage = aiDuelStatusMessage,
+                            isBusy = aiDuelBusy,
+                            onAction = ::submitAiDuelAction,
+                            onRefresh = ::refreshAiDuel,
+                            onLeave = ::leaveAiDuel,
+                        )
+                    } else if (isAiDuelSetupOpen) {
+                        AiDuelSetupScreen(
+                            cards = deckCardCatalog,
+                            humanDeck = playerDeck,
+                            isBusy = aiDuelBusy,
+                            statusMessage = aiDuelStatusMessage,
+                            onBack = {
+                                isAiDuelSetupOpen = false
+                                aiDuelStatusMessage = ""
+                            },
+                            onStart = ::startAiDuel,
+                        )
                     } else {
                         OnlineStartScreen(
                         currentUser = currentUser,
@@ -152,6 +191,10 @@ class MainActivity : ComponentActivity() {
                         roomSession = roomSession,
                         deckSummary = deckSummary(),
                         onEditDeck = ::openDeckEditor,
+                        onAiDuel = {
+                            aiDuelStatusMessage = ""
+                            isAiDuelSetupOpen = true
+                        },
                         onSignIn = ::signInWithGoogle,
                         onSignOut = ::signOut,
                         onCreateRoom = ::createRoom,
@@ -561,6 +604,106 @@ class MainActivity : ComponentActivity() {
         if (current == null || snapshot.sequence >= current.sequence) roomSnapshot = snapshot
     }
 
+    private fun startAiDuel(aiDeck: AiDuelDeck, aiName: String) {
+        if (aiDuelBusy) return
+        val deckErrors = DeckRules.validate(playerDeck, deckCardCatalog)
+        if (deckErrors.isNotEmpty()) {
+            aiDuelStatusMessage = deckErrors.first()
+            return
+        }
+
+        aiDuelBusy = true
+        aiDuelStatusMessage = "AI 대전을 만들고 있습니다…"
+        lifecycleScope.launch {
+            try {
+                val match = withContext(Dispatchers.IO) {
+                    AiDuelApi.create(
+                        serverUrl = BuildConfig.AI_DUEL_SERVER_URL,
+                        humanDeck = playerDeck,
+                        aiDeck = aiDeck,
+                        aiName = aiName,
+                    )
+                }
+                val session = AiDuelSession(gameCode = match.code, aiName = match.aiName)
+                aiDuelStore.save(session)
+                aiDuelSession = session
+                aiDuelMatch = match
+                aiDuelConnectionStatus = "연결됨"
+                aiDuelStatusMessage = ""
+                isAiDuelSetupOpen = false
+            } catch (error: Exception) {
+                aiDuelStatusMessage = error.localizedMessage ?: "AI 대전을 시작하지 못했습니다."
+            } finally {
+                aiDuelBusy = false
+            }
+        }
+    }
+
+    private fun refreshAiDuel() {
+        val session = aiDuelSession ?: return
+        if (aiDuelBusy || aiDuelRefreshing) return
+        aiDuelRefreshing = true
+        lifecycleScope.launch {
+            try {
+                val updated = withContext(Dispatchers.IO) {
+                    AiDuelApi.getState(BuildConfig.AI_DUEL_SERVER_URL, session.gameCode)
+                }
+                if (aiDuelSession?.gameCode == session.gameCode) {
+                    publishAiDuelMatch(updated)
+                    aiDuelConnectionStatus = "연결됨"
+                    aiDuelStatusMessage = ""
+                }
+            } catch (error: Exception) {
+                if (aiDuelSession?.gameCode == session.gameCode) {
+                    aiDuelConnectionStatus = "연결 끊김"
+                    aiDuelStatusMessage = error.localizedMessage ?: "AI 대전 상태를 불러오지 못했습니다."
+                }
+            } finally {
+                aiDuelRefreshing = false
+            }
+        }
+    }
+
+    private fun submitAiDuelAction(action: DuelActionRequest) {
+        val session = aiDuelSession ?: return
+        if (aiDuelBusy) return
+        aiDuelBusy = true
+        lifecycleScope.launch {
+            try {
+                val updated = withContext(Dispatchers.IO) {
+                    AiDuelApi.submitHumanAction(
+                        BuildConfig.AI_DUEL_SERVER_URL,
+                        session.gameCode,
+                        action,
+                    )
+                }
+                publishAiDuelMatch(updated)
+                aiDuelConnectionStatus = "연결됨"
+                aiDuelStatusMessage = ""
+            } catch (error: Exception) {
+                aiDuelStatusMessage = error.localizedMessage ?: "행동을 처리하지 못했습니다."
+            } finally {
+                aiDuelBusy = false
+            }
+        }
+    }
+
+    private fun publishAiDuelMatch(updated: AiDuelMatch) {
+        if (updated.code != aiDuelSession?.gameCode) return
+        val current = aiDuelMatch
+        if (current == null || updated.revision >= current.revision) aiDuelMatch = updated
+    }
+
+    private fun leaveAiDuel() {
+        aiDuelStore.clear()
+        aiDuelSession = null
+        aiDuelMatch = null
+        aiDuelConnectionStatus = "연결 안 됨"
+        aiDuelStatusMessage = ""
+        aiDuelBusy = false
+        aiDuelRefreshing = false
+    }
+
     private fun performRoomRequest(request: (idToken: String, displayName: String) -> RoomSessionResult) {
         val user = firebaseAuth?.currentUser
         if (user == null) {
@@ -614,6 +757,7 @@ private fun OnlineStartScreen(
     roomSession: RoomSession?,
     deckSummary: String,
     onEditDeck: () -> Unit,
+    onAiDuel: () -> Unit,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onCreateRoom: () -> Unit,
@@ -704,6 +848,18 @@ private fun OnlineStartScreen(
                 colors = ButtonDefaults.buttonColors(disabledContainerColor = Color(0xFF343A46)),
             ) {
                 Text("덱 편집", color = Color(0xFFCFD4DE), modifier = Modifier.padding(vertical = 5.dp))
+            }
+            Button(
+                onClick = onAiDuel,
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Accent,
+                    disabledContainerColor = Color(0xFF343A46),
+                ),
+            ) {
+                Text("AI 대전", color = Color(0xFF101218), modifier = Modifier.padding(vertical = 5.dp))
             }
             OutlinedTextField(
                 value = roomCodeInput,

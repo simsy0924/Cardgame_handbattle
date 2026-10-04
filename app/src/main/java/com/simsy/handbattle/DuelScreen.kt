@@ -55,6 +55,10 @@ fun DuelScreen(
     isBusy: Boolean,
     onAction: (DuelActionRequest) -> Unit,
     onLeave: () -> Unit,
+    aiDuelProvider: String? = null,
+    aiDuelConnectionInfo: String? = null,
+    onCopyAiDuelInstructions: (() -> Unit)? = null,
+    onRefresh: (() -> Unit)? = null,
 ) {
     val game = snapshot.duel
     val ownSeat = session.seat
@@ -89,6 +93,9 @@ fun DuelScreen(
                 )
                 Text(connectionStatus, color = DuelMuted, fontSize = 12.sp)
                 Spacer(Modifier.weight(1f))
+                if (onRefresh != null) {
+                    OutlinedButton(onClick = onRefresh, enabled = !isBusy) { Text("새로고침") }
+                }
                 OutlinedButton(onClick = onLeave, enabled = !isBusy) { Text("나가기") }
             }
 
@@ -156,6 +163,27 @@ fun DuelScreen(
         ) {
             Text("게임 행동", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(game?.format ?: "스타터 덱", color = DuelMuted, fontSize = 12.sp)
+            if (aiDuelConnectionInfo != null) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(Color(0xFF252C3A), RoundedCornerShape(10.dp))
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Text("${aiDuelProvider ?: "AI"} 연결", color = DuelAccent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text("AI 도구 연결: $aiDuelConnectionInfo", color = DuelMuted, fontSize = 10.sp)
+                    Text("대전 코드: ${session.roomCode}", color = Color.White, fontSize = 11.sp)
+                    Button(
+                        onClick = { onCopyAiDuelInstructions?.invoke() },
+                        enabled = !isBusy && onCopyAiDuelInstructions != null,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(9.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DuelAccent),
+                    ) {
+                        Text("AI 연결 안내 복사", color = Color(0xFF101218))
+                    }
+                }
+            }
             if (game == null) {
                 Text("대전 상태를 불러오는 중입니다.", color = DuelMuted, fontSize = 13.sp)
             } else if (game.finished) {

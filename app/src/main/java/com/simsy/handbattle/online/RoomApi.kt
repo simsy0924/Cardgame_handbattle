@@ -349,7 +349,7 @@ object RoomApi {
         )
     }
 
-    private fun parseDuelSnapshot(duel: JSONObject): DuelSnapshot {
+    fun parseDuelSnapshot(duel: JSONObject): DuelSnapshot {
         val playersJson = duel.optJSONArray("players") ?: JSONArray()
         val players = (0 until playersJson.length()).mapNotNull { index ->
             playersJson.optJSONObject(index)?.let { player ->

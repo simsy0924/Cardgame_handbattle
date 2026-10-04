@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CARD_DEFINITIONS, defaultPlayerDeck } from "../../server/src/duel.js";
-import { normalizeDeckFile, validateDeck } from "../web/deck-format.mjs";
+import { normalizeDeckFile, validateDeck } from "../src/deck-format.mjs";
 
 test("normalizes repeated IDs, count objects, and nested deck exports", () => {
   const mainIds = CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 10).map((card) => card.id);
