@@ -31,20 +31,22 @@ The GitHub Actions workflow runs these tests on server changes.
 
 ## Run and deploy
 
-Install Wrangler for local development and deployment:
+For local development:
 
 ```bash
 npx wrangler@latest dev
 ```
 
-Before the first deployment, sign in to the Cloudflare account that will host the Worker, confirm that it is on the Free plan, then deploy:
+GitHub Actions deployment is defined in [worker-deploy.yml](../.github/workflows/worker-deploy.yml). Before enabling it:
 
-```bash
-npx wrangler@latest login
-npx wrangler@latest whoami
-npx wrangler@latest deploy
-```
+1. In Cloudflare, create an API token with the **Edit Cloudflare Workers** policy and restrict it to the account that will host this Worker.
+2. In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+3. Add the repository variable `CLOUDFLARE_FREE_PLAN_CONFIRMED` with the value `true` only after confirming the Cloudflare account is on the Free plan.
 
-The project ID is configured as `cardgame-1b151` in `wrangler.jsonc`. Change that value only if the Firebase Authentication app uses another Firebase project. No paid plan, Cloud Functions, or service-account secret is needed for the room server. Cloudflare Free quotas are hard limits; the service may stop accepting requests after the account reaches a limit.
+Keep the API token in GitHub Secrets; never commit it or paste it into a chat. The workflow deploys only when the confirmation variable is exactly `true`, after tests pass. It runs for server changes pushed to `main` or `rewrite/android-native-start`. If the variable was unset when this workflow was added, the initial run is skipped; after setting the secrets and variable, push a change under `server/` to start the first deployment.
+
+The project ID is configured as `cardgame-1b151` in `wrangler.jsonc`. Change that value only if the Firebase Authentication app uses another Firebase project. No paid plan, Firebase Cloud Functions, or service-account secret is needed for the room server. Cloudflare Free quotas are hard limits; the service may stop accepting requests after the account reaches a limit.
 
 The Android lobby remains disabled until Firebase Google sign-in is configured in the Android app and the deployed Worker URL is added to its build configuration.
