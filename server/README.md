@@ -39,11 +39,12 @@ npx wrangler@latest dev
 
 GitHub Actions deployment is defined in [worker-deploy.yml](../.github/workflows/worker-deploy.yml). Before enabling it:
 
-1. In Cloudflare, create an account API token with the **Workers Admin** role at the Workers product scope, limited to the account that will host this Worker. Creating a new Worker requires product-level Admin; after the first deploy, you can reduce access to Editor for this Worker.
-2. In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets:
+1. For the first deploy, create an account API token with the **Workers Admin** role at the Workers product scope, limited to the account that will host this Worker. Creating a new Worker requires product-level Admin.
+2. After the Worker exists, create a replacement token with the **Workers Editor** role scoped only to the `handbattle-game-server` Worker. Replace the `CLOUDFLARE_API_TOKEN` repository secret with this token, verify a new deployment succeeds, and only then revoke the original Admin token.
+3. In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets:
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
-3. Add the repository variable `CLOUDFLARE_FREE_PLAN_CONFIRMED` with the value `true` only after confirming the Cloudflare account is on the Free plan.
+4. Add the repository variable `CLOUDFLARE_FREE_PLAN_CONFIRMED` with the value `true` only after confirming the Cloudflare account is on the Free plan.
 
 Keep the API token in GitHub Secrets; never commit it or paste it into a chat. The workflow deploys only when the confirmation variable is exactly `true`, after tests pass. It runs for server changes pushed to `main` or `rewrite/android-native-start`. If the variable was unset when this workflow was added, the initial run is skipped; after setting the secrets and variable, push a change under `server/` to start the first deployment.
 
