@@ -41,8 +41,11 @@ jobs:
             test -s "$RUNNER_TEMP/hand-battle-debug.keystore"
             keytool -list -keystore "$RUNNER_TEMP/hand-battle-debug.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" > /dev/null
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/hand-battle-debug.keystore" >> "$GITHUB_ENV"
+          elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "Pull request validation without repository signing key; using runner debug key."
           else
-            echo "No CI signing keystore configured; using the runner debug key."
+            echo "::error::HANDBATTLE_KEYSTORE_BASE64 secret is not available to this run."
+            exit 1
           fi
 
       - name: Set up Gradle
