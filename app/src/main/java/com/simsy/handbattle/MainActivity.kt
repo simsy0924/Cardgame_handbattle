@@ -129,7 +129,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         authStateListener?.let { listener -> firebaseAuth?.addAuthStateListener(listener) }
-        if (firebaseAuth?.currentUser != null && roomSession != null && roomStream == null) {
+        if (firebaseAuth?.currentUser != null && roomSession != null) {
             reconnectRoom()
         }
     }
