@@ -1,8 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDuel, defaultPlayerDeck } from "../../server/src/duel.js";
+import { createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
 import { MatchStore } from "../src/game-store.mjs";
 import { dispatchApiRequest } from "../src/http-server.mjs";
+function passResponseWindows(game) {
+  let attempts = 0;
+  while (game.pending?.prompt.type === "respond" && attempts++ < 100) {
+    const player = game.pending.prompt.player === "A" ? 0 : 1;
+    game = executeDuelCommand(game, player, { type: "choice", values: ["pass"] });
+  }
+  return game;
+}
+
 
 test("API routes return the card list and start a match with the supplied AI deck", () => {
   const store = new MatchStore();
@@ -37,7 +46,7 @@ test("API routes return the card list and start a match with the supplied AI dec
 test("human and manual AI routes both use the same authoritative command engine", () => {
   const humanStore = new MatchStore({
     duelFactory: (decks) => {
-      const game = createDuel(decks);
+      const game = passResponseWindows(createDuel(decks));
       game.state.turn = { player: "A", phase: "deploy", number: 1 };
       return game;
     },
@@ -53,7 +62,7 @@ test("human and manual AI routes both use the same authoritative command engine"
 
   const aiStore = new MatchStore({
     duelFactory: (decks) => {
-      const game = createDuel(decks);
+      const game = passResponseWindows(createDuel(decks));
       game.state.turn = { player: "B", phase: "deploy", number: 1 };
       return game;
     },
