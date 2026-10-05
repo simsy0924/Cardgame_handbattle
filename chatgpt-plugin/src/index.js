@@ -1,7 +1,12 @@
 import { tools, upstreamNames } from './tools.mjs';
 
 const MCP_UPSTREAM = 'https://hand-battle-ai-mcp.onrender.com/mcp';
-const SUPPORTED_VERSIONS = new Set(['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25']);
+// Newest first. ChatGPT negotiates 2026-07-28 / 2026-01-26 / 2025-11-25; older clients still use the 2025 and 2024 versions.
+// A stateless tools-only server is compatible with all of them, so an unknown version falls back to the newest one here.
+export const SUPPORTED_VERSIONS = ['2026-07-28', '2026-01-26', '2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
+export function negotiateProtocolVersion(requested) {
+  return SUPPORTED_VERSIONS.includes(requested) ? requested : SUPPORTED_VERSIONS[0];
+}
 const MAX_BODY_BYTES = 1024 * 1024;
 
 function json(status, value) {
@@ -25,7 +30,7 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/health' && request.method === 'GET') {
-      return json(200, { ok: true, service: 'hand-battle-gpt-mcp', version: '2.0.0' });
+      return json(200, { ok: true, service: 'hand-battle-gpt-mcp', version: '2.1.0' });
     }
     if (url.pathname !== '/mcp') return json(404, { error: 'not_found' });
     if (request.method !== 'POST') return new Response('MCP requests must use POST.', {
@@ -39,8 +44,14 @@ export default {
     } catch {
       return rpcError(null, -32700, 'Parse error', 400);
     }
-    if (!message || Array.isArray(message) || message.jsonrpc !== '2.0' || typeof message.method !== 'string') {
+    if (!message || Array.isArray(message) || message.jsonrpc !== '2.0') {
       return rpcError(message?.id, -32600, 'Invalid Request', 400);
+    }
+    // Notifications and client responses (to a server request) carry no reply body: 202 per Streamable HTTP.
+    if (typeof message.method !== 'string') {
+      return Object.hasOwn(message, 'result') || Object.hasOwn(message, 'error')
+        ? new Response(null, { status: 202 })
+        : rpcError(message.id, -32600, 'Invalid Request', 400);
     }
     const id = message.id;
     if (!Object.hasOwn(message, 'id')) return new Response(null, { status: 202 });
@@ -48,9 +59,9 @@ export default {
 
     // Discovery is local and independent of Render startup time or game state.
     if (message.method === 'initialize') return result({
-      protocolVersion: SUPPORTED_VERSIONS.has(message.params?.protocolVersion) ? message.params.protocolVersion : '2025-03-26',
+      protocolVersion: negotiateProtocolVersion(message.params?.protocolVersion),
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: 'hand-battle-ai-duel-plugin', version: '2.0.0' },
+      serverInfo: { name: 'hand-battle-ai-duel-plugin', version: '2.1.0' },
       instructions: 'Hand Battle 전용입니다. 앱의 32자리 코드를 game_code로 전달하세요. AI는 플레이어 B입니다. hand_battle_get_game_rules와 hand_battle_get_card_catalog로 규칙과 효과를 확인하고, hand_battle_get_duel_state와 hand_battle_get_legal_actions를 읽어 합법 행동 하나씩 실행하세요. 유희왕 전개 검증기의 pairingCode 도구를 사용하지 마세요. 상대 차례이면 행동을 실행하지 말고 기다리세요.',
     });
     if (message.method === 'ping') return result({});

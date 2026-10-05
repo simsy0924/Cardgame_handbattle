@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createDuel, defaultPlayerDeck } from "../../server/src/duel.js";
 import { MatchStore } from "../src/game-store.mjs";
-import { handleMcpMessage } from "../src/http-server.mjs";
+import { SUPPORTED_PROTOCOL_VERSIONS, handleMcpMessage, negotiateProtocolVersion } from "../src/http-server.mjs";
 
 test("supports MCP initialization, tool discovery, and initialized notifications", () => {
   const store = new MatchStore();
@@ -24,6 +24,20 @@ test("supports MCP initialization, tool discovery, and initialized notifications
   const notified = handleMcpMessage(store, { jsonrpc: "2.0", method: "notifications/initialized" });
   assert.equal(notified.httpStatus, 202);
   assert.equal(notified.body, null);
+  const clientResponse = handleMcpMessage(store, { jsonrpc: "2.0", id: 9, result: {} });
+  assert.equal(clientResponse.httpStatus, 202);
+  assert.equal(handleMcpMessage(store, { jsonrpc: "2.0", id: 9 }).httpStatus, 400);
+});
+
+test("negotiates the ChatGPT and Claude protocol versions and never falls back to an old one", () => {
+  const store = new MatchStore();
+  for (const version of ["2026-07-28", "2026-01-26", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]) {
+    const reply = handleMcpMessage(store, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: version } });
+    assert.equal(reply.body.result.protocolVersion, version);
+  }
+  const unknown = handleMcpMessage(store, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2027-01-01" } });
+  assert.equal(unknown.body.result.protocolVersion, SUPPORTED_PROTOCOL_VERSIONS[0]);
+  assert.equal(negotiateProtocolVersion(undefined), "2026-07-28");
 });
 
 test("read MCP tools expose only the AI perspective and provide its legal moves", () => {

@@ -73,7 +73,7 @@ fun AiDuelSetupScreen(
             Text("HAND BATTLE", color = AiSetupAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
             Text("AI 대전", color = Color.White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
             Text("앱의 덱 편집창에서 AI 덱을 만들고 대전을 시작하세요. 게임은 이 앱 화면에서 진행됩니다.", color = AiSetupMuted, fontSize = 15.sp)
-            Text("연결된 GPT 또는 Claude 대화에 안내를 붙여넣고 Hand Battle 도구로 플레이하세요.", color = AiSetupMuted, fontSize = 13.sp)
+            Text("연결된 GPT 또는 Claude 대화에 대전 코드를 붙여넣고 Hand Battle 도구로 플레이하세요.", color = AiSetupMuted, fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onBack) { Text("나가기") }
         }
@@ -149,16 +149,6 @@ fun AiDuelScreen(
     } else {
         "Claude MCP 서버: " + mcpUrl
     }
-    val prompt = remember(session.gameCode, session.aiName, mcpUrl) {
-        listOf(
-            "Hand Battle AI 대전을 진행해줘.",
-            "연결된 AI 도구로 대전해. Claude라면 " + mcpUrl + " MCP 서버를 사용해.",
-            "내 대전 코드: " + session.gameCode,
-            "너는 AI 플레이어 B야. 먼저 get_game_rules와 get_card_catalog을 확인하고, get_duel_state와 get_legal_actions로 상태를 확인해.",
-            "합법 행동만 duel_action으로 하나씩 실행하고, 내가 앱에서 행동할 때까지 기다려.",
-            "카드 효과는 카탈로그의 공식 텍스트를 따르고 내 비공개 패를 추측하지 마.",
-        ).joinToString("\n")
-    }
     LaunchedEffect(session.gameCode) {
         onRefresh()
         while (true) {
@@ -191,7 +181,7 @@ fun AiDuelScreen(
         aiDuelConnectionInfo = connectionInfo,
         cards = cards,
         aiToolSeen = match?.aiToolSeen,
-        onCopyAiDuelInstructions = { clipboard.setText(AnnotatedString(prompt)) },
+        onCopyAiDuelInstructions = { clipboard.setText(AnnotatedString(session.gameCode)) },
         onRefresh = onRefresh,
     )
 }

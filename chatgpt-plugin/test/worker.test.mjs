@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import worker from '../src/index.js';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import worker, { SUPPORTED_VERSIONS, negotiateProtocolVersion } from '../src/index.js';
 import { tools } from '../src/tools.mjs';
+import { bundle } from '../build.mjs';
 
 const code = 'A'.repeat(32);
 const rpc = (method, params, authenticated = true) => new Request('https://site.example/mcp', {
@@ -18,7 +23,17 @@ test('initialization, discovery and notifications work without contacting Render
   await withFetch(() => { throw new Error('must not contact Render'); }, async () => {
     const init = await (await worker.fetch(rpc('initialize', { protocolVersion: '2025-06-18' }, false))).json();
     assert.equal(init.result.protocolVersion, '2025-06-18');
-    assert.equal(init.result.serverInfo.version, '2.0.0');
+    assert.equal(init.result.serverInfo.version, '2.1.0');
+    // ChatGPT negotiates the 2026 protocol versions; an unknown version gets the newest supported one, never an old one.
+    for (const version of ['2026-07-28', '2026-01-26', '2025-11-25']) {
+      const reply = await (await worker.fetch(rpc('initialize', { protocolVersion: version }, false))).json();
+      assert.equal(reply.result.protocolVersion, version);
+    }
+    const unknown = await (await worker.fetch(rpc('initialize', { protocolVersion: '2027-01-01' }, false))).json();
+    assert.equal(unknown.result.protocolVersion, SUPPORTED_VERSIONS[0]);
+    assert.equal(negotiateProtocolVersion(undefined), '2026-07-28');
+    const clientResponse = await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 7, result: {} }) }));
+    assert.equal(clientResponse.status, 202);
     const list = await (await worker.fetch(rpc('tools/list', {}, false))).json();
     assert.deepEqual(list.result.tools.map(t => t.name), ['hand_battle_get_duel_state', 'hand_battle_get_legal_actions', 'hand_battle_get_card_catalog', 'hand_battle_get_game_rules', 'hand_battle_duel_action']);
     assert.deepEqual(list.result.tools[0].inputSchema.required, ['game_code']);
@@ -93,6 +108,22 @@ test('malformed JSON and unsupported routes never contact the backend', async ()
     assert.equal((await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: '{' }))).status, 400);
     assert.equal((await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: 'null' }))).status, 400);
     const health = await (await worker.fetch(new Request('https://site.example/health'))).json();
-    assert.equal(health.version, '2.0.0');
+    assert.equal(health.version, '2.1.0');
+  });
+});
+
+test('the built single-file Worker behaves like the source modules', async () => {
+  const source = await bundle();
+  assert.equal(source.includes('from \'./tools.mjs\''), false);
+  assert.match(source, /^export default \{/m);
+  const dir = await mkdtemp(join(tmpdir(), 'hand-battle-plugin-'));
+  const file = join(dir, 'index.js');
+  await writeFile(file, source);
+  const built = (await import(pathToFileURL(file).href)).default;
+  await withFetch(() => { throw new Error('must not contact Render'); }, async () => {
+    const init = await (await built.fetch(rpc('initialize', { protocolVersion: '2026-07-28' }, false))).json();
+    assert.equal(init.result.protocolVersion, '2026-07-28');
+    const list = await (await built.fetch(rpc('tools/list', {}, false))).json();
+    assert.deepEqual(list.result.tools.map(t => t.name), tools.map(t => t.name));
   });
 });
