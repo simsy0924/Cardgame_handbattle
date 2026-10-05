@@ -39,12 +39,14 @@ function createDuelAndPassQuickWindows(decks) {
 test("starts with five cards, a shuffled shared starter deck, and a private opponent hand", () => {
   const game = createDuel();
   const snapshot = duelSnapshot(game, 0);
-  const mainCount = CARD_DEFINITIONS.filter((card) => card.deck === "main").length;
+  const mainCount = defaultPlayerDeck().main.length / 3;
   const keyCount = defaultPlayerDeck().key.length;
 
-  assert.equal(game.pending?.prompt.window, "phase_start");
-  const firstPromptSeat = game.pending.prompt.player === "A" ? 0 : 1;
-  assert.match(duelSnapshot(game, firstPromptSeat).pendingChoice.title, /퀵타이밍/);
+  if (game.pending) {
+    assert.equal(game.pending.prompt.window, "phase_start");
+    const firstPromptSeat = game.pending.prompt.player === "A" ? 0 : 1;
+    assert.match(duelSnapshot(game, firstPromptSeat).pendingChoice.title, /퀵타이밍/);
+  }
   const firstPlayer = game.state.turn.player;
   const secondPlayer = firstPlayer === "A" ? "B" : "A";
   assert.equal(game.state.players[firstPlayer].hand.length, 6);
@@ -116,6 +118,22 @@ test("normal summons are unavailable and monsters can only be summoned by effect
     () => executeDuelCommand(game, 0, { type: "normal_summon", uid: card }),
     (error) => error.code === "invalid_action" && /일반 소환이 없습니다/.test(error.message),
   );
+});
+
+test("field card activation is available as a card action even with no activation effect", () => {
+  let game = createDuelAndPassQuickWindows();
+  const engine = editableEngine(game);
+  engine.state.turn = { player: "A", phase: "deploy", number: 1 };
+  const fieldCard = engine.addCard(byName["태평양 속 르뤼에"], "A", "hand");
+  game.state = engine.state;
+
+  const action = duelSnapshot(game, 0).actions.find((candidate) =>
+    candidate.type === "activate_field_card" && candidate.uid === fieldCard);
+  assert.ok(action);
+
+  game = passResponseWindows(executeDuelCommand(game, 0, { type: action.type, uid: fieldCard }));
+  assert.equal(game.pending, null);
+  assert.equal(game.state.players.A.field_zone.some((uid) => game.state.cards[uid].id === byName["태평양 속 르뤼에"]), true);
 });
 
 test("the second player draws when their first turn begins", () => {

@@ -11,6 +11,7 @@ data class DeckCard(
     val deck: String,
     val attack: Int?,
     val description: String,
+    val theme: String = id.substringBefore('_'),
 )
 
 data class PlayerDeck(
@@ -31,6 +32,7 @@ object DeckCardCatalog {
                     deck = card.getString("deck"),
                     attack = if (card.isNull("attack")) null else card.optInt("attack"),
                     description = card.optString("description"),
+                    theme = card.optString("theme", card.getString("id").substringBefore('_')),
                 )
             }
         }
@@ -41,7 +43,8 @@ object DeckRules {
     const val KEY_DECK_MAX = 10
 
     fun starterDeck(cards: List<DeckCard>): PlayerDeck = PlayerDeck(
-        main = cards.filter { it.deck == "main" }.flatMap { card -> List(3) { card.id } },
+        // Keep the legacy starter deck legal as new theme pools are added.
+        main = cards.filter { it.deck == "main" }.take(18).flatMap { card -> List(3) { card.id } },
         key = cards.filter { it.deck == "key" }.take(KEY_DECK_MAX).map { it.id },
     )
 

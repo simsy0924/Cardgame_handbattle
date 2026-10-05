@@ -1,6 +1,8 @@
 import { Engine, OTHER } from "./engine.mjs";
 import genericDeck from "./cards/generic_deck.json" with { type: "json" };
 import penguinDeck from "./cards/penguin_deck.json" with { type: "json" };
+import elementsDeck from "./cards/elements_deck.json" with { type: "json" };
+import cthulhuDeck from "./cards/cthulhu_deck.json" with { type: "json" };
 
 const PLAYERS = ["A", "B"];
 const FIRST_OPENING_HAND_SIZE = 6;
@@ -8,8 +10,9 @@ const SECOND_OPENING_HAND_SIZE = 7;
 const MAIN_COPIES = 4;
 const KEY_DECK_MAX = 10;
 
-export const CARD_DEFINITIONS = [...genericDeck.cards, ...penguinDeck];
+export const CARD_DEFINITIONS = [...genericDeck.cards, ...penguinDeck, ...elementsDeck.cards, ...cthulhuDeck.cards];
 const DEFINITIONS = Object.fromEntries(CARD_DEFINITIONS.map((card) => [card.id, card]));
+const EFFECT_FILTERS = { ...genericDeck.effect_filters, ...elementsDeck.effect_filters };
 
 export class DuelRuleError extends Error {
   constructor(code, message) {
@@ -21,7 +24,7 @@ export class DuelRuleError extends Error {
 
 export function defaultPlayerDeck() {
   return {
-    main: CARD_DEFINITIONS.filter((card) => card.deck === "main").flatMap((card) =>
+    main: CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 18).flatMap((card) =>
       Array.from({ length: 3 }, () => card.id),
     ),
     key: CARD_DEFINITIONS.filter((card) => card.deck === "key").slice(0, KEY_DECK_MAX).map((card) => card.id),
@@ -149,7 +152,8 @@ function createEngine(seed, answers = []) {
 
   return new Engine(CARD_DEFINITIONS, {
     seed,
-    effectFilters: genericDeck.effect_filters,
+    effectFilters: EFFECT_FILTERS,
+    counterRules: elementsDeck.counter_rules,
     choose: (args) => ask("choose", args),
     confirm: (args) => ask("confirm", args),
     respond: (args) => ask("respond", args),
@@ -274,6 +278,14 @@ function applyCommand(engine, game, seat, command) {
         option.uid === command.uid && option.eid === command.effectId);
       if (!allowed) throw new DuelRuleError("invalid_effect", "지금 발동할 수 없는 효과입니다.");
       engine.activate(command.uid, command.effectId);
+      return;
+    }
+    case "activate_field_card": {
+      requireActiveTurn(engine, seat, "deploy");
+      if (!engine.canActivateFieldCard(player, command.uid)) {
+        throw new DuelRuleError("invalid_field_activation", "이 필드 카드는 지금 발동할 수 없습니다.");
+      }
+      engine.activateFieldCard(command.uid);
       return;
     }
     case "fetch": {
@@ -495,6 +507,14 @@ function availableActions(engine, game, seat) {
       uid: option.uid,
       effectId: option.eid,
       label: `${engine.def(option.uid).name} ${option.eid} 발동`,
+    });
+  }
+
+  for (const option of engine.fieldActivationOptions(player)) {
+    actions.push({
+      type: "activate_field_card",
+      uid: option.uid,
+      label: `${engine.def(option.uid).name} 카드 발동`,
     });
   }
 

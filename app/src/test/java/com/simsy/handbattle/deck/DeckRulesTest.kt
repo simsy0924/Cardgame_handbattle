@@ -21,6 +21,16 @@ class DeckRulesTest {
     }
 
     @Test
+    fun defaultDeckStaysLegalWhenMoreThemeCardsAreAdded() {
+        val expandedCatalog = cards + List(14) { index -> card("new-theme-$index", "main") }
+
+        val deck = DeckRules.starterDeck(expandedCatalog)
+
+        assertEquals(54, deck.main.size)
+        assertTrue(DeckRules.validate(deck, expandedCatalog).isEmpty())
+    }
+
+    @Test
     fun mainDeckMustContainFortyToSixtyCardsAndAllowsFourCopies() {
         val fortyCards = cards.filter { it.deck == "main" }.take(10).flatMap { card -> List(4) { card.id } }
         val sixtyCards = cards.filter { it.deck == "main" }.take(15).flatMap { card -> List(4) { card.id } }

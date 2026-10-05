@@ -1,0 +1,2704 @@
+{
+  "counter_rules": {
+    "화염": {
+      "attack_per": -1
+    },
+    "물": {
+      "shield_defender": true
+    },
+    "전기": {
+      "every": {
+        "count": 2,
+        "steps": [
+          {
+            "type": "select",
+            "id": "d",
+            "from": "opponent_hand",
+            "count": 1,
+            "chooser": "self",
+            "hidden_hand": "random"
+          },
+          {
+            "type": "discard",
+            "card": "d"
+          }
+        ]
+      }
+    },
+    "바람": {
+      "every": {
+        "count": 2,
+        "steps": [
+          {
+            "type": "draw",
+            "player": "self",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "궁극": {
+      "attack_per": 1
+    }
+  },
+  "effect_filters": {
+    "discards_own_hand": {
+      "includes_any": [
+        {
+          "step": "discard",
+          "from": [
+            "hand"
+          ]
+        },
+        {
+          "step": "discard_down_to"
+        }
+      ]
+    }
+  },
+  "cards": [
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_001",
+      "name": "엘리멘츠의 불꽃정령",
+      "type": "monster",
+      "deck": "main",
+      "attack": 3,
+      "counter_type": "화염",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand",
+            "any_of": [
+              {
+                "empty": "own_field"
+              },
+              {
+                "exists": {
+                  "location": "own_field",
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                }
+              }
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "card": "self",
+                  "from": "hand"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "choose_branch",
+                  "id": "b",
+                  "branches": [
+                    {
+                      "id": "counter",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s1",
+                          "from": "opponent_field",
+                          "count": 1,
+                          "filter": {
+                            "type": "monster"
+                          }
+                        },
+                        {
+                          "type": "place_counter",
+                          "counter": "화염",
+                          "count": 1,
+                          "to": "s1"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "search",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s2",
+                          "from": "deck",
+                          "count": 1,
+                          "filter": {
+                            "tag": "엘리멘츠"
+                          }
+                        },
+                        {
+                          "type": "add_to_hand",
+                          "card": "s2"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand_hidden"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": false
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "remove_counter",
+                  "id": "rm",
+                  "from": "opponent_field",
+                  "kinds": [
+                    "화염",
+                    "물",
+                    "전기",
+                    "바람"
+                  ],
+                  "count": {
+                    "min": 1,
+                    "max": 2
+                  }
+                },
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": {
+                    "min": 1,
+                    "max": {
+                      "var": "rm"
+                    }
+                  },
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_002",
+      "name": "엘리멘츠의 물정령",
+      "type": "monster",
+      "deck": "main",
+      "attack": 2,
+      "counter_type": "물",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand",
+            "any_of": [
+              {
+                "empty": "own_field"
+              },
+              {
+                "exists": {
+                  "location": "own_field",
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                }
+              }
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "card": "self",
+                  "from": "hand"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "choose_branch",
+                  "id": "b",
+                  "branches": [
+                    {
+                      "id": "counter",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s1",
+                          "from": "opponent_field",
+                          "count": 1,
+                          "filter": {
+                            "type": "monster"
+                          }
+                        },
+                        {
+                          "type": "place_counter",
+                          "counter": "물",
+                          "count": 1,
+                          "to": "s1"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "search",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s2",
+                          "from": "deck",
+                          "count": 1,
+                          "filter": {
+                            "tag": "엘리멘츠"
+                          }
+                        },
+                        {
+                          "type": "add_to_hand",
+                          "card": "s2"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "added_to_hand",
+              "card": "self",
+              "revealed": true
+            }
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                },
+                {
+                  "type": "conceal_in_hand",
+                  "card": "self"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_003",
+      "name": "엘리멘츠의 전기정령",
+      "type": "monster",
+      "deck": "main",
+      "attack": 4,
+      "counter_type": "전기",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand",
+            "any_of": [
+              {
+                "empty": "own_field"
+              },
+              {
+                "exists": {
+                  "location": "own_field",
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                }
+              }
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "card": "self",
+                  "from": "hand"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "choose_branch",
+                  "id": "b",
+                  "branches": [
+                    {
+                      "id": "counter",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s1",
+                          "from": "opponent_field",
+                          "count": 1,
+                          "filter": {
+                            "type": "monster"
+                          }
+                        },
+                        {
+                          "type": "place_counter",
+                          "counter": "전기",
+                          "count": 1,
+                          "to": "s1"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "search",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s2",
+                          "from": "deck",
+                          "count": 1,
+                          "filter": {
+                            "tag": "엘리멘츠"
+                          }
+                        },
+                        {
+                          "type": "add_to_hand",
+                          "card": "s2"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": [
+              "hand",
+              "field"
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "send_to_grave",
+                "card": "self"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": "전기",
+                  "count": 1,
+                  "to": "all_opponent_monsters"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_004",
+      "name": "엘리멘츠의 바람정령",
+      "type": "monster",
+      "deck": "main",
+      "attack": 1,
+      "counter_type": "바람",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand",
+            "any_of": [
+              {
+                "empty": "own_field"
+              },
+              {
+                "exists": {
+                  "location": "own_field",
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                }
+              }
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "card": "self",
+                  "from": "hand"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "choose_branch",
+                  "id": "b",
+                  "branches": [
+                    {
+                      "id": "counter",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s1",
+                          "from": "opponent_field",
+                          "count": 1,
+                          "filter": {
+                            "type": "monster"
+                          }
+                        },
+                        {
+                          "type": "place_counter",
+                          "counter": "바람",
+                          "count": 1,
+                          "to": "s1"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "search",
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s2",
+                          "from": "deck",
+                          "count": 1,
+                          "filter": {
+                            "tag": "엘리멘츠"
+                          }
+                        },
+                        {
+                          "type": "add_to_hand",
+                          "card": "s2"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "name": "엘리멘츠 in rainbow forest"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_005",
+      "name": "엘리멘츠 in rainbow forest",
+      "type": "field",
+      "deck": "main",
+      "activation_zone": "field_zone",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠",
+                    "type": "monster"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field_zone"
+          },
+          "continuous": {
+            "type": "unnegatable",
+            "who": "self",
+            "effect_filter": {
+              "contains_step": [
+                "place_counter",
+                "use_summon_effects"
+              ]
+            }
+          },
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "grave",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠",
+                    "not_card_id": "elements_005"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ],
+      "activation_effect": "e1"
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_006",
+      "name": "엘리멘츠 is fairy!!!",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": [
+                  "deck",
+                  "grave"
+                ],
+                "count": {
+                  "min": 1,
+                  "max": 2
+                },
+                "filter": {
+                  "tag": "엘리멘츠",
+                  "type": "monster"
+                }
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "field_all",
+                  "count": "all_possible",
+                  "filter": {
+                    "type": "monster",
+                    "has_counter_written_on": "c1"
+                  }
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": [
+                  "deck",
+                  "grave"
+                ],
+                "count": 4,
+                "filter": {
+                  "tag": "엘리멘츠",
+                  "type": "monster"
+                },
+                "distinct_names": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": {
+                    "written_on": "c1"
+                  },
+                  "count": 1,
+                  "to": "all_opponent_monsters"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_007",
+      "name": "엘리멘츠의 M∀GIC",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "deck",
+                "count": 1,
+                "filter": {
+                  "tag": "엘리멘츠"
+                }
+              },
+              {
+                "type": "banish",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "banished",
+                  "count": {
+                    "min": 1,
+                    "max": 2
+                  },
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "hand_or_summon",
+                  "card": "s1",
+                  "mode": "choice"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_008",
+      "name": "엘리멘츠의 TR∀P",
+      "type": "trap",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "turn": "opponent",
+              "effect_filter": null
+            }
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "remove_counter",
+                "id": "rm",
+                "from": "opponent_field",
+                "distinct_kinds": 4
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": true,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "chain.last.source"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "opponent",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": [
+                  "deck",
+                  "grave"
+                ],
+                "count": 4,
+                "filter": {
+                  "tag": "엘리멘츠",
+                  "type": "monster"
+                },
+                "distinct_names": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": {
+                    "written_on": "c1"
+                  },
+                  "count": 1,
+                  "to": "all_opponent_monsters"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_009",
+      "name": "엘리멘츠의 ♤♡◇♧",
+      "type": "spell",
+      "deck": "key",
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠",
+                    "type": "monster"
+                  }
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": {
+                    "written_on": "s1"
+                  },
+                  "count": 1,
+                  "to": "all_opponent_monsters"
+                },
+                {
+                  "type": "store_var",
+                  "var": "placed",
+                  "key": "placed"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": {
+                    "memory": "placed"
+                  }
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "count": 1,
+                  "chooser": "self"
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_010",
+      "name": "엘리멘츠의 궁극신",
+      "type": "monster",
+      "deck": "key",
+      "attack": 7,
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "summon_condition_required": true,
+      "summon_procedure": {
+        "from": [
+          "hand",
+          "grave"
+        ],
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "cost": {
+          "pay": [
+            {
+              "type": "remove_counter",
+              "from": "opponent_field",
+              "kinds": [
+                "화염",
+                "물",
+                "전기",
+                "바람"
+              ],
+              "per_kind": 2
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "field_all",
+                  "count": "all_possible",
+                  "filter": {
+                    "type": "monster"
+                  },
+                  "exclude": "self"
+                },
+                {
+                  "type": "return_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": true
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "count": {
+                    "min": 1,
+                    "max": 4
+                  },
+                  "filter": {
+                    "tag": "엘리멘츠",
+                    "type": "monster"
+                  },
+                  "distinct_names": true
+                },
+                {
+                  "type": "summon",
+                  "card": "s1",
+                  "suppress_trigger": true
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "use_summon_effects",
+                  "cards": "s1"
+                }
+              ]
+            },
+            {
+              "group": 3,
+              "apply": "sequential",
+              "on_prev_fail": "continue",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": "궁극",
+                  "count": 1,
+                  "to": "self"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false,
+          "no_response": true
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": null
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e4",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "from": null,
+              "to": [
+                "banished"
+              ]
+            }
+          },
+          "condition": {
+            "card_location": "banished"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": true,
+              "steps": [
+                {
+                  "type": "add_to_hand",
+                  "card": "self"
+                },
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "opponent_hand",
+                  "count": 1,
+                  "chooser": "self",
+                  "hidden_hand": "random"
+                },
+                {
+                  "type": "banish",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_011",
+      "name": "엘리멘츠의 마법",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": true,
+            "targets": [
+              {
+                "kind": "card",
+                "id": "t1",
+                "from": [
+                  "grave",
+                  "banished"
+                ],
+                "filter": {
+                  "tag": "엘리멘츠"
+                },
+                "count": 1
+              }
+            ]
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "hand_or_summon",
+                  "card": "t1",
+                  "mode": "monster_summon_else_hand"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠",
+                    "type": "monster"
+                  }
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                },
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "opponent_field",
+                  "count": 1,
+                  "filter": {
+                    "type": "monster"
+                  }
+                },
+                {
+                  "type": "place_counter",
+                  "counter": {
+                    "written_on": "s1"
+                  },
+                  "count": 2,
+                  "to": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_012",
+      "name": "엘리멘츠의 궁극 창조신",
+      "type": "monster",
+      "deck": "key",
+      "attack": 7,
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "summon_condition_required": true,
+      "summon_once_per_turn": true,
+      "summon_procedure": {
+        "from": [
+          "hand",
+          "grave"
+        ],
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "cost": {
+          "pay": [
+            {
+              "type": "remove_counter",
+              "from": "opponent_field",
+              "kinds": [
+                "화염",
+                "물",
+                "전기",
+                "바람"
+              ],
+              "per_kind": 4
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "opponent_field_all",
+                  "count": {
+                    "min": 3,
+                    "max": 7
+                  }
+                },
+                {
+                  "type": "return_to_hand",
+                  "card": "s1"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "grave",
+                  "count": {
+                    "min": 0,
+                    "max": {
+                      "op": "sub",
+                      "a": 7,
+                      "b": {
+                        "count_of": "s1"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "return_to_hand",
+                  "card": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "count": {
+                    "min": 1,
+                    "max": 4
+                  },
+                  "filter": {
+                    "tag": "엘리멘츠",
+                    "type": "monster"
+                  },
+                  "distinct_names": true
+                },
+                {
+                  "type": "summon",
+                  "card": "s1",
+                  "suppress_trigger": true
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "use_summon_effects",
+                  "cards": "s1"
+                }
+              ]
+            },
+            {
+              "group": 3,
+              "apply": "sequential",
+              "on_prev_fail": "continue",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": {
+                    "written_on": "s1"
+                  },
+                  "distribute": {
+                    "max_per_kind": 2
+                  }
+                }
+              ]
+            },
+            {
+              "group": 4,
+              "apply": "sequential",
+              "on_prev_fail": "continue",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": "궁극",
+                  "count": 1,
+                  "to": "self"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false,
+          "no_response": true
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "continuous": [
+            {
+              "type": "activation_ban",
+              "who": "opponent",
+              "effect_filter": {
+                "ref": "discards_own_hand"
+              }
+            },
+            {
+              "type": "untargetable",
+              "scope": "self",
+              "from": "opponent_card_effects"
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e4",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "from": null,
+              "to": [
+                "banished"
+              ]
+            }
+          },
+          "condition": {
+            "card_location": "banished"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "card": "self",
+                  "from": "banished",
+                  "ignore_conditions": true
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": "궁극",
+                  "count": 1,
+                  "to": "self"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e5",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "remove_counter",
+                "id": "rm",
+                "counter": "궁극",
+                "from": "field_all",
+                "count": 3
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "modify_attack",
+                  "card": "self",
+                  "amount": 7
+                },
+                {
+                  "type": "restrict",
+                  "what": "cannot_leave_field",
+                  "card": "self",
+                  "duration": "end_of_turn"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_013",
+      "name": "궁극의 엘리멘츠",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand",
+            "exists": {
+              "location": "own_field",
+              "filter": {
+                "name": "엘리멘츠의 궁극 창조신"
+              }
+            }
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "keydeck",
+                  "count": 1,
+                  "filter": {
+                    "name": "엘리멘츠의 궁극신"
+                  }
+                },
+                {
+                  "type": "summon",
+                  "card": "s1",
+                  "from": "keydeck",
+                  "ignore_conditions": true,
+                  "suppress_trigger": true
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "hand",
+                  "count": 1,
+                  "chooser": "self"
+                },
+                {
+                  "type": "discard",
+                  "card": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_014",
+      "name": "엘리멘츠의 어둠정령",
+      "type": "monster",
+      "deck": "key",
+      "attack": 7,
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "summon_condition_required": true,
+      "summon_procedure": {
+        "from": "hand",
+        "to": "opponent_field",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "condition": {
+          "exists": {
+            "location": "own_field",
+            "filter": {
+              "tag": "엘리멘츠",
+              "type": "monster"
+            }
+          }
+        },
+        "cost": {
+          "pay": []
+        }
+      },
+      "effects": [
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "count": {
+                    "min": 1,
+                    "max": 3
+                  },
+                  "filter": {
+                    "type": "monster"
+                  }
+                },
+                {
+                  "type": "summon",
+                  "card": "s1",
+                  "to": "opponent_field",
+                  "negated": true
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": true
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field",
+            "controller_field_has_other": {
+              "tag": "엘리멘츠",
+              "type": "monster"
+            }
+          },
+          "continuous": {
+            "type": "protection",
+            "what": "cannot_leave_field"
+          },
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_015",
+      "name": "엘리멘츠의 빛정령",
+      "type": "monster",
+      "deck": "key",
+      "attack": 0,
+      "fetch": {
+        "forbidden": false,
+        "condition": null
+      },
+      "summon_condition_required": true,
+      "summon_procedure": {
+        "from": "hand",
+        "timing": {
+          "turn": "self",
+          "phase": "deploy"
+        },
+        "uses_chain": false,
+        "negatable": false,
+        "condition": {
+          "exists": {
+            "location": "own_field",
+            "filter": {
+              "tag": "엘리멘츠",
+              "type": "monster"
+            }
+          }
+        },
+        "cost": {
+          "pay": []
+        }
+      },
+      "effects": [
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "opponent_field",
+                  "count": 1,
+                  "filter": {
+                    "name": "엘리멘츠의 어둠정령"
+                  }
+                },
+                {
+                  "type": "place_counter",
+                  "counter": "궁극",
+                  "count": 1,
+                  "to": "s1"
+                },
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "deck",
+                  "count": 1,
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "continuous": {
+            "type": "untargetable",
+            "scope": "self",
+            "from": "opponent_card_effects"
+          },
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "elements",
+      "tags": [
+        "엘리멘츠"
+      ],
+      "id": "elements_016",
+      "name": "재창조의 엘리멘츠",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "deck",
+                "count": 1,
+                "filter": {
+                  "tag": "엘리멘츠"
+                }
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "place_counter",
+                  "counter": "present",
+                  "distribute": {
+                    "mirror": true
+                  }
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "banished",
+                  "count": {
+                    "min": 1,
+                    "max": 2
+                  },
+                  "filter": {
+                    "tag": "엘리멘츠"
+                  }
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    }
+  ]
+}
