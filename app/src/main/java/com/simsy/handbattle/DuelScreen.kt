@@ -206,7 +206,7 @@ fun DuelScreen(
                     )
                     Text(
                         if (aiToolSeen == true) "AI 대화의 도구 호출이 게임 서버에 도달했습니다."
-                        else "연결한 GPT 또는 Claude 대화에서 안내를 붙여넣고 대전 상태를 조회하세요.",
+                        else "연결한 GPT 또는 Claude 대화에 대전 코드를 붙여넣고 대전 상태를 조회하세요.",
                         color = DuelMuted,
                         fontSize = 10.sp,
                         lineHeight = 14.sp,
@@ -220,7 +220,7 @@ fun DuelScreen(
                         shape = RoundedCornerShape(9.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DuelAccent),
                     ) {
-                        Text("AI 연결 안내 복사", color = Color(0xFF101218))
+                        Text("대전 코드 복사", color = Color(0xFF101218))
                     }
                 }
             }
