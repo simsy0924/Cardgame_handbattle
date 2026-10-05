@@ -7,6 +7,7 @@ export const SUPPORTED_VERSIONS = ['2026-07-28', '2026-01-26', '2025-11-25', '20
 export function negotiateProtocolVersion(requested) {
   return SUPPORTED_VERSIONS.includes(requested) ? requested : SUPPORTED_VERSIONS[0];
 }
+const UPSTREAM_TIMEOUT_MS = 60_000;
 const MAX_BODY_BYTES = 1024 * 1024;
 
 function json(status, value) {
@@ -18,12 +19,46 @@ function json(status, value) {
 function rpcError(id, code, message, status = 200) {
   return json(status, { jsonrpc: '2.0', id: id ?? null, error: { code, message } });
 }
-function toolError(id, code, message) {
+function toolError(id, code, message, diagnostic) {
   return json(200, { jsonrpc: '2.0', id, result: {
     isError: true,
     content: [{ type: 'text', text: message }],
-    structuredContent: { error: { code, message } },
+    structuredContent: { error: { code, message, ...(diagnostic ? { diagnostic } : {}) } },
   } });
+}
+function safeDiagnosticText(value) {
+  if (typeof value !== 'string') return undefined;
+  return value.replace(/[\\r\\n\\t]+/g, ' ').slice(0, 180);
+}
+function describeError(error) {
+  const diagnostic = {};
+  const name = safeDiagnosticText(error?.name);
+  const message = safeDiagnosticText(error?.message);
+  if (name) diagnostic.name = name;
+  if (message) diagnostic.message = message;
+  const cause = error?.cause;
+  if (cause && typeof cause === 'object') {
+    const causeName = safeDiagnosticText(cause.name);
+    const causeMessage = safeDiagnosticText(cause.message);
+    const causeCode = typeof cause.code === 'string' || typeof cause.code === 'number'
+      ? safeDiagnosticText(String(cause.code))
+      : undefined;
+    if (causeName) diagnostic.causeName = causeName;
+    if (causeCode) diagnostic.causeCode = causeCode;
+    if (causeMessage) diagnostic.causeMessage = causeMessage;
+  }
+  if (!Object.keys(diagnostic).length) return { name: 'Error', message: 'Unknown upstream failure' };
+  return diagnostic;
+}
+function diagnosticText(diagnostic) {
+  return [diagnostic.causeCode, diagnostic.causeMessage, diagnostic.name, diagnostic.message]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(': ')
+    .slice(0, 240);
+}
+function logUpstreamError(stage, toolName, diagnostic) {
+  // Do not log tool arguments, game codes, identity headers, or credentials.
+  console.error(JSON.stringify({ event: 'hand_battle_upstream_error', stage, tool: toolName, ...diagnostic }));
 }
 
 export default {
@@ -80,22 +115,53 @@ export default {
         (typeof args.game_code !== 'string' || !/^[A-Fa-f0-9]{32}$/.test(args.game_code))) {
       return toolError(id, 'invalid_game_code', '앱에서 받은 32자리 대전 코드를 game_code로 전달하세요.');
     }
+    // A free Render instance can need about a minute to wake after idle. Use a
+    // portable AbortController timeout instead of AbortSignal.timeout(), which
+    // is not implemented consistently by all Worker runtimes.
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, UPSTREAM_TIMEOUT_MS);
     try {
       // Never forward OAuth credentials or identity. Never retry an action.
-      const upstream = await fetch(new Request(MCP_UPSTREAM, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
-        body: JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/call', params: { name: upstreamName, arguments: args } }),
-        redirect: 'error', signal: AbortSignal.timeout(45000),
-      }));
+      let upstream;
+      try {
+        upstream = await fetch(new Request(MCP_UPSTREAM, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+          body: JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/call', params: { name: upstreamName, arguments: args } }),
+          // Cloudflare Workers support only "follow" and "manual". Manual
+          // keeps the request on the configured upstream instead of following
+          // redirects to an unexpected host.
+          redirect: 'manual', signal: controller.signal,
+        }));
+      } catch (error) {
+        const diagnostic = describeError(error);
+        logUpstreamError(timedOut ? 'timeout' : 'fetch', upstreamName, { ...diagnostic, timedOut });
+        const code = timedOut ? 'upstream_timeout' : 'upstream_unavailable';
+        const detail = diagnosticText(diagnostic);
+        const message = timedOut
+          ? `Hand Battle 서버가 ${UPSTREAM_TIMEOUT_MS / 1000}초 안에 응답하지 않았습니다.${upstreamName === 'duel_action' ? ' 행동 결과를 확인할 수 없어 재전송하지 않았습니다. 먼저 대전 상태를 확인하세요.' : ''}`
+          : `Hand Battle 서버 연결에 실패했습니다 (${detail}).${upstreamName === 'duel_action' ? ' 행동 결과를 확인할 수 없어 재전송하지 않았습니다. 먼저 대전 상태를 확인하세요.' : ''}`;
+        return toolError(id, code, message, diagnostic);
+      }
       if (!upstream.ok) return toolError(id, 'upstream_http_error', `Hand Battle 서버가 HTTP ${upstream.status} 오류를 반환했습니다.`);
-      const reply = await upstream.json();
+      let reply;
+      try {
+        reply = await upstream.json();
+      } catch (error) {
+        const diagnostic = describeError(error);
+        logUpstreamError('response_json', upstreamName, { ...diagnostic, contentType: upstream.headers.get('content-type') || 'unknown' });
+        return toolError(id, 'invalid_upstream_response', `Hand Battle 서버가 읽을 수 없는 응답을 반환했습니다 (${diagnosticText(diagnostic)}).`, diagnostic);
+      }
       if (reply?.jsonrpc !== '2.0' || reply.id !== id || (!Object.hasOwn(reply, 'result') && !Object.hasOwn(reply, 'error'))) {
         return toolError(id, 'invalid_upstream_response', 'Hand Battle 서버 응답 형식을 확인할 수 없습니다.');
       }
       return json(200, reply);
-    } catch {
-      return toolError(id, 'upstream_unavailable', 'Hand Battle 서버에 연결하지 못했습니다. 상태를 다시 확인하세요. 행동이 처리됐을 수 있으므로 같은 행동을 바로 재시도하지 마세요.');
+    } finally {
+      clearTimeout(timeout);
     }
   },
 };
