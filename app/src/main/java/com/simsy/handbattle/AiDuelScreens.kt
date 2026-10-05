@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simsy.handbattle.ai.AiDuelDeck
+import com.simsy.handbattle.ai.AiDuelInstructions
 import com.simsy.handbattle.ai.AiDuelMatch
 import com.simsy.handbattle.ai.AiDuelSession
 import com.simsy.handbattle.deck.DeckCard
@@ -150,14 +151,7 @@ fun AiDuelScreen(
         "Claude MCP 서버: " + mcpUrl
     }
     val prompt = remember(session.gameCode, session.aiName, mcpUrl) {
-        listOf(
-            "Hand Battle AI 대전을 진행해줘.",
-            "연결된 AI 도구로 대전해. Claude라면 " + mcpUrl + " MCP 서버를 사용해.",
-            "내 대전 코드: " + session.gameCode,
-            "너는 AI 플레이어 B야. 먼저 get_game_rules와 get_card_catalog을 확인하고, get_duel_state와 get_legal_actions로 상태를 확인해.",
-            "합법 행동만 duel_action으로 하나씩 실행하고, 내가 앱에서 행동할 때까지 기다려.",
-            "카드 효과는 카탈로그의 공식 텍스트를 따르고 내 비공개 패를 추측하지 마.",
-        ).joinToString("\n")
+        AiDuelInstructions.build(aiName = session.aiName, gameCode = session.gameCode, mcpUrl = mcpUrl)
     }
     LaunchedEffect(session.gameCode) {
         onRefresh()

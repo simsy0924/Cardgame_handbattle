@@ -42,7 +42,7 @@ The game API is available on the configured port. /mcp exposes the Streamable HT
 
 ## MCP tools
 
-In ChatGPT, connect the Hand Battle AI Duel tool and paste the in-app instructions into the conversation. In Claude, connect an MCP server at https://hand-battle-ai-mcp.onrender.com/mcp, then paste the same instructions.
+In ChatGPT, install the Hand Battle AI Duel plugin hosted on ChatGPT Sites (see [`chatgpt-plugin/`](../chatgpt-plugin/)); it publishes these tools as `hand_battle_get_game_rules`, `hand_battle_get_card_catalog`, `hand_battle_get_duel_state`, `hand_battle_get_legal_actions` and `hand_battle_duel_action`, and the app's GPT instructions use those names. In Claude, connect an MCP server at https://hand-battle-ai-mcp.onrender.com/mcp, which exposes the canonical names below. The endpoint negotiates MCP protocol versions 2024-11-05 through 2026-07-28 and answers an unknown version with the newest supported one.
 
 | Tool | Access | Purpose |
 | --- | --- | --- |

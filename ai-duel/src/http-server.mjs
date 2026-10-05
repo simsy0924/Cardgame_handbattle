@@ -195,9 +195,22 @@ export function dispatchApiRequest({ store, method, pathname, body = {} }) {
   return null;
 }
 
+// Newest first. ChatGPT negotiates 2026-07-28 / 2026-01-26 / 2025-11-25; Claude and older clients use the 2025 and 2024 versions.
+// This stateless tools-only server is compatible with all of them, so an unknown version falls back to the newest one.
+export const SUPPORTED_PROTOCOL_VERSIONS = ["2026-07-28", "2026-01-26", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
+
+export function negotiateProtocolVersion(requested) {
+  return SUPPORTED_PROTOCOL_VERSIONS.includes(requested) ? requested : SUPPORTED_PROTOCOL_VERSIONS[0];
+}
+
 export function handleMcpMessage(store, message) {
-  if (!message || typeof message !== "object" || Array.isArray(message) || message.jsonrpc !== "2.0" || typeof message.method !== "string") {
+  if (!message || typeof message !== "object" || Array.isArray(message) || message.jsonrpc !== "2.0") {
     return { httpStatus: 400, body: { jsonrpc: "2.0", id: message?.id ?? null, error: { code: -32600, message: "Invalid Request" } } };
+  }
+  if (typeof message.method !== "string") {
+    // A client response to a server request has no reply body (202), like a notification.
+    if (Object.hasOwn(message, "result") || Object.hasOwn(message, "error")) return { httpStatus: 202, body: null };
+    return { httpStatus: 400, body: { jsonrpc: "2.0", id: message.id ?? null, error: { code: -32600, message: "Invalid Request" } } };
   }
 
   const id = Object.hasOwn(message, "id") ? message.id : undefined;
@@ -209,10 +222,8 @@ export function handleMcpMessage(store, message) {
   if (id === undefined) return { httpStatus: 202, body: null };
 
   if (message.method === "initialize") {
-    const requestedVersion = message.params?.protocolVersion;
-    const supported = new Set(["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"]);
     return request({
-      protocolVersion: supported.has(requestedVersion) ? requestedVersion : "2025-03-26",
+      protocolVersion: negotiateProtocolVersion(message.params?.protocolVersion),
       capabilities: { tools: { listChanged: false } },
       serverInfo: { name: "hand-battle-ai-duel", version: "1.0.0" },
       instructions: "게임 코드를 가진 AI는 플레이어 B입니다. 상태와 합법 행동을 확인한 뒤 행동 하나씩 처리하세요. 외부 카드 규칙을 추측하지 말고 get_card_catalog의 텍스트를 따르세요.",
