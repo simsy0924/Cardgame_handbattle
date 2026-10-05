@@ -1,11 +1,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDuel, defaultPlayerDeck } from "../../server/src/duel.js";
+import { createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
 import { MatchError, MatchStore } from "../src/game-store.mjs";
+
+
+function passResponseWindows(game) {
+  let attempts = 0;
+  while (game.pending?.prompt.type === "respond" && attempts++ < 100) {
+    const player = game.pending.prompt.player === "A" ? 0 : 1;
+    game = executeDuelCommand(game, player, { type: "choice", values: ["pass"] });
+  }
+  return game;
+}
 
 function storeStartingOnAiTurn() {
   const factory = () => {
-    const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+    const game = passResponseWindows(createDuel([defaultPlayerDeck(), defaultPlayerDeck()]));
     game.state.turn = { player: "B", phase: "deploy", number: 1 };
     return game;
   };
@@ -44,7 +54,7 @@ test("AI receives revision-bound legal actions and can execute only the current 
 test("the MCP AI seat cannot act during the human player's turn", () => {
   const store = new MatchStore({
     duelFactory: () => {
-      const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+      const game = passResponseWindows(createDuel([defaultPlayerDeck(), defaultPlayerDeck()]));
       game.state.turn = { player: "A", phase: "deploy", number: 1 };
       return game;
     },
