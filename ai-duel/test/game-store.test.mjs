@@ -13,6 +13,24 @@ function passResponseWindows(game) {
   return game;
 }
 
+
+function passStoreWindows(store, code) {
+  for (let attempts = 0; attempts < 100; attempts += 1) {
+    const human = store.getState(code, 0).snapshot.pendingChoice;
+    const ai = store.getState(code, 1).snapshot.pendingChoice;
+    if (human && !human.waiting) {
+      store.applyHumanCommand(code, { type: "choice", values: ["pass"] });
+      continue;
+    }
+    if (ai && !ai.waiting) {
+      store.applyAiAction(code, { choiceValues: ["pass"] });
+      continue;
+    }
+    if (!human && !ai) return store.getState(code, 0);
+  }
+  throw new Error("Quick-timing windows did not finish after consecutive passes.");
+}
+
 function storeStartingOnAiTurn() {
   const factory = () => {
     const game = passResponseWindows(createDuel([defaultPlayerDeck(), defaultPlayerDeck()]));
@@ -42,8 +60,9 @@ test("AI receives revision-bound legal actions and can execute only the current 
   assert.ok(legal.actions.some((action) => action.command.type === "next_phase"));
 
   const action = legal.actions.find((item) => item.command.type === "next_phase");
-  const after = store.applyAiAction(created.code, { actionId: action.actionId });
-  assert.equal(after.revision, 1);
+  const pending = store.applyAiAction(created.code, { actionId: action.actionId });
+  assert.equal(pending.revision, 1);
+  const after = passStoreWindows(store, created.code);
   assert.equal(after.snapshot.phase, "attack");
   assert.throws(
     () => store.applyAiAction(created.code, { actionId: action.actionId }),
