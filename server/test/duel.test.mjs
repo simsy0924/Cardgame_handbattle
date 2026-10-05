@@ -18,12 +18,33 @@ function editableEngine(game) {
   return engine;
 }
 
+function passResponseWindows(game) {
+  let attempts = 0;
+  while (game.pending?.prompt.type === "respond" && attempts++ < 100) {
+    const prompt = game.pending.prompt;
+    game = executeDuelCommand(game, prompt.player === "A" ? 0 : 1, {
+      type: "choice",
+      values: ["pass"],
+    });
+  }
+  return game;
+}
+
+function createDuelAndPassQuickWindows(decks) {
+  const game = passResponseWindows(createDuel(decks));
+  assert.equal(game.pending, null);
+  return game;
+}
+
 test("starts with five cards, a shuffled shared starter deck, and a private opponent hand", () => {
   const game = createDuel();
   const snapshot = duelSnapshot(game, 0);
   const mainCount = CARD_DEFINITIONS.filter((card) => card.deck === "main").length;
   const keyCount = defaultPlayerDeck().key.length;
 
+  assert.equal(game.pending?.prompt.window, "phase_start");
+  const firstPromptSeat = game.pending.prompt.player === "A" ? 0 : 1;
+  assert.match(duelSnapshot(game, firstPromptSeat).pendingChoice.title, /퀵타이밍/);
   const firstPlayer = game.state.turn.player;
   const secondPlayer = firstPlayer === "A" ? "B" : "A";
   assert.equal(game.state.players[firstPlayer].hand.length, 6);
@@ -68,7 +89,7 @@ test("accepts 40 to 60 main cards, at most four copies, and up to ten key cards"
 test("creates each player's game zones from that player's submitted deck", () => {
   const mainIds = CARD_DEFINITIONS.filter((card) => card.deck === "main").slice(0, 10).map((card) => card.id);
   const customDeck = { main: mainIds.flatMap((id) => Array(4).fill(id)), key: defaultPlayerDeck().key.slice(0, 2) };
-  const game = createDuel([customDeck, defaultPlayerDeck()]);
+  const game = createDuelAndPassQuickWindows([customDeck, defaultPlayerDeck()]);
 
   for (const [seat, player] of ["A", "B"].entries()) {
     const zones = game.state.players[player];
@@ -84,7 +105,7 @@ test("creates each player's game zones from that player's submitted deck", () =>
 });
 
 test("normal summons are unavailable and monsters can only be summoned by effects or key procedures", () => {
-  const game = createDuel();
+  const game = createDuelAndPassQuickWindows();
   const engine = editableEngine(game);
   engine.state.turn = { player: "A", phase: "deploy", number: 1 };
   const card = engine.addCard(byName["현자 펭귄"], "A", "hand");
@@ -98,7 +119,7 @@ test("normal summons are unavailable and monsters can only be summoned by effect
 });
 
 test("the second player draws when their first turn begins", () => {
-  const game = createDuel();
+  const game = createDuelAndPassQuickWindows();
   const engine = editableEngine(game);
   const firstPlayer = engine.state.turn.player;
   const secondPlayer = firstPlayer === "A" ? "B" : "A";
@@ -114,16 +135,16 @@ test("the second player draws when their first turn begins", () => {
   const secondHandBefore = game.state.players[secondPlayer].hand.length;
   const firstSeat = firstPlayer === "A" ? 0 : 1;
 
-  let next = executeDuelCommand(game, firstSeat, { type: "next_phase" });
-  next = executeDuelCommand(next, firstSeat, { type: "next_phase" });
-  next = executeDuelCommand(next, firstSeat, { type: "next_phase" });
+  let next = passResponseWindows(executeDuelCommand(game, firstSeat, { type: "next_phase" }));
+  next = passResponseWindows(executeDuelCommand(next, firstSeat, { type: "next_phase" }));
+  next = passResponseWindows(executeDuelCommand(next, firstSeat, { type: "next_phase" }));
 
   assert.equal(next.state.turn.player, secondPlayer);
   assert.equal(next.state.players[secondPlayer].hand.length, secondHandBefore + 1);
 });
 
 test("card choices pause the action and only the prompted player can resume it", () => {
-  const game = createDuel();
+  const game = createDuelAndPassQuickWindows();
   const engine = editableEngine(game);
   engine.state.turn = { player: "A", phase: "deploy", number: 1 };
   const killShot = engine.state.players.A.keydeck.find((uid) => engine.def(uid).name === "일격필살");
@@ -150,7 +171,7 @@ test("card choices pause the action and only the prompted player can resume it",
   assert.equal(prompt.waiting, false);
   assert.equal(prompt.options.length, 2);
 
-  const finished = executeDuelCommand(paused, 1, { type: "choice", values: [prompt.options[0].value] });
+  const finished = passResponseWindows(executeDuelCommand(paused, 1, { type: "choice", values: [prompt.options[0].value] }));
   assert.equal(finished.pending, null);
   assert.equal(finished.state.players.B.hand.length, 1);
   assert.equal(finished.state.players.B.grave.length, 1);
