@@ -50,6 +50,7 @@ test('each namespaced tool forwards the canonical name, arguments and reply with
     await withFetch(async request => {
       calls++;
       assert.equal(request.url, 'https://hand-battle-ai-mcp.onrender.com/mcp');
+      assert.equal(request.redirect, 'manual');
       for (const h of ['authorization', 'cookie', 'oai-authenticated-user-id']) assert.equal(request.headers.has(h), false);
       const body = await request.json();
       assert.equal(body.params.name, tool.name.slice('hand_battle_'.length));
@@ -82,12 +83,20 @@ test('backend game errors are preserved', async () => {
   });
 });
 
-test('network failures do not retry actions or invent successful results', async () => {
+test('network failures report diagnostics, do not retry actions or invent successful results', async () => {
   let calls = 0;
-  await withFetch(async () => { calls++; throw new Error('network'); }, async () => {
+  await withFetch(async () => {
+    calls++;
+    const error = new TypeError('fetch failed');
+    error.cause = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    throw error;
+  }, async () => {
     const reply = await (await worker.fetch(rpc('tools/call', { name: 'hand_battle_duel_action', arguments: { game_code: code, action_id: 'end-turn' } }))).json();
     assert.equal(reply.result.isError, true);
     assert.equal(reply.result.structuredContent.error.code, 'upstream_unavailable');
+    assert.equal(reply.result.structuredContent.error.diagnostic.causeCode, 'ECONNREFUSED');
+    assert.match(reply.result.content[0].text, /ECONNREFUSED/);
+    assert.match(reply.result.content[0].text, /재전송하지 않았습니다/);
     assert.equal(calls, 1);
   });
 });
@@ -99,6 +108,18 @@ test('HTTP errors and non-MCP replies remain explicit tool errors', async () => 
       assert.equal(reply.result.isError, true);
     });
   }
+});
+
+test('a successful HTTP response with an unreadable body is not mislabeled as a connection failure', async () => {
+  await withFetch(async () => new Response('<html>upstream error</html>', {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  }), async () => {
+    const reply = await (await worker.fetch(rpc('tools/call', { name: 'hand_battle_get_game_rules' }))).json();
+    assert.equal(reply.result.isError, true);
+    assert.equal(reply.result.structuredContent.error.code, 'invalid_upstream_response');
+    assert.equal(reply.result.structuredContent.error.diagnostic.name, 'SyntaxError');
+  });
 });
 
 test('malformed JSON and unsupported routes never contact the backend', async () => {
