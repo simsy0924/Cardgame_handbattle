@@ -153,3 +153,21 @@ test("when the turn player advances a phase, the opponent gets the first fast-ef
   assert.equal(seen[0].window, "phase_end");
   assert.deepEqual(seen[0].chain, []);
 });
+
+test("fast-effect windows do not offer the separate key-card fetch procedure", () => {
+  const keyCard = { id: "key", name: "key", type: "monster", fetch: {}, effects: [] };
+  const seen = [];
+  const engine = new Engine([keyCard], {
+    respond(args) {
+      seen.push(args);
+      return null;
+    },
+  });
+  const uid = engine.addCard("key", "A", "keydeck");
+
+  engine.quickEffectWindow({ window: "phase_start" });
+  engine.phaseBoundaryWindow();
+
+  assert.deepEqual(engine.fetchOptions("A"), [{ fetch: true, uid }]);
+  assert.equal(seen.length, 0);
+});
