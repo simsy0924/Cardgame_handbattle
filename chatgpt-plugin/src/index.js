@@ -28,7 +28,7 @@ function toolError(id, code, message, diagnostic) {
 }
 function safeDiagnosticText(value) {
   if (typeof value !== 'string') return undefined;
-  return value.replace(/[\\r\\n\\t]+/g, ' ').slice(0, 180);
+  return value.replace(/[\r\n\t]+/g, ' ').slice(0, 180);
 }
 function describeError(error) {
   const diagnostic = {};
