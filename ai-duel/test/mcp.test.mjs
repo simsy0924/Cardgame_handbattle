@@ -1,8 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDuel, defaultPlayerDeck } from "../../server/src/duel.js";
+import { createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
 import { MatchStore } from "../src/game-store.mjs";
 import { SUPPORTED_PROTOCOL_VERSIONS, handleMcpMessage, negotiateProtocolVersion } from "../src/http-server.mjs";
+function passResponseWindows(game) {
+  let attempts = 0;
+  while (game.pending?.prompt.type === "respond" && attempts++ < 100) {
+    const player = game.pending.prompt.player === "A" ? 0 : 1;
+    game = executeDuelCommand(game, player, { type: "choice", values: ["pass"] });
+  }
+  return game;
+}
+
 
 test("supports MCP initialization, tool discovery, and initialized notifications", () => {
   const store = new MatchStore();
@@ -43,7 +52,7 @@ test("negotiates the ChatGPT and Claude protocol versions and never falls back t
 test("read MCP tools expose only the AI perspective and provide its legal moves", () => {
   const store = new MatchStore({
     duelFactory: (decks) => {
-      const game = createDuel(decks);
+      const game = passResponseWindows(createDuel(decks));
       game.state.turn = { player: "B", phase: "deploy", number: 1 };
       return game;
     },
