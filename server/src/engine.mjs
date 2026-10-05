@@ -458,6 +458,17 @@ export class Engine {
     if (t.turn === 'opponent' && mine) return false;
     return t.phase === 'all' || t.phase === this.S.turn.phase;
   }
+  isFastEffect(effect, uid) {
+    if (effect.activation_type === 'quick') return true;
+    if (effect.activation_type === 'ignition') return false;
+    if (effect.timing?.event) return false;
+
+    const timing = effect.timing;
+    if (this.def(uid).type === 'trap') return true;
+    if (timing?.turn === 'opponent' || timing?.turn === 'both') return true;
+    if (timing?.phase === 'all') return true;
+    return ['draw', 'attack', 'end'].includes(timing?.phase);
+  }
   limitKey(effect, uid) { const l = effect.limit; return `${this.S.cards[uid].owner}|${this.def(uid).id}${l.group === 'card_id' ? '' : ':' + effect.id}`; }
   limitOk(effect, uid) {
     const l = effect.limit;
@@ -493,12 +504,16 @@ export class Engine {
     if (!this.limitOk(effect, uid)) return false;
     return true;
   }
-  // 우선권이 있을 때(체인 없음) 발동 가능한 기동 효과
-  activatableIgnitions(player) {
+  // 열린 상태에서 턴 플레이어가 사용할 수 있는 효과(기동 효과와 빠른 효과)
+  activatableEffects(player) {
     return this.options(player, false);
   }
-  // 체인 위에서 응답 가능한 효과: self/deploy 가 아닌 모든 기동 효과 + effect_activated 이벤트 효과 + 가져오기
-  options(player, inChain) {
+  // 이전 호출 이름과의 호환성을 유지한다.
+  activatableIgnitions(player) {
+    return this.activatableEffects(player);
+  }
+  // 체인 중에는 Spell Speed 2 이상의 효과와 현재 체인에 반응하는 유발 효과만 허용한다.
+  options(player, inChain, { fastOnly = false } = {}) {
     const out = [];
     const last = this.S.chain[this.S.chain.length - 1];
     for (const z of ['hand', 'field', 'field_zone', 'grave', 'banished']) for (const uid of this.S.players[player][z])
@@ -507,7 +522,10 @@ export class Engine {
         const ev = e.timing?.event;
         let ok = false;
         if (ev) ok = inChain && last && ev.type === 'effect_activated' && this.activatedMatches(ev, last, player);
-        else ok = this.timingOk(e, uid) && (!inChain || !(e.timing.turn === 'self' && e.timing.phase === 'deploy'));
+        else {
+          ok = this.timingOk(e, uid);
+          if (ok && (fastOnly || inChain)) ok = this.isFastEffect(e, uid);
+        }
         if (!ok || !this.canActivate(uid, e) || !this.feasible(uid, e)) continue;
         out.push({ uid, eid: e.id });
       }
@@ -571,14 +589,51 @@ export class Engine {
   activate(uid, eid) { this.declare(uid, eid); this.runChain(); }
   activateCard(uid, eid) { return this.activate(uid, eid); } // 호환용
 
-  // 체인 진행: 응답 창 -> 역순 처리 -> 유발 효과로 새 체인
-  runChain() {
+  // 체인을 역순으로 처리하고, 유발 체인이 더 없을 때 빠른 효과 창을 연다.
+  runChain({ window = 'after_resolution' } = {}) {
+    this.resolveChains();
+    this.quickEffectWindow({ window });
+  }
+  resolveChains() {
     let guard = 0;
     while (this.S.chain.length && guard++ < 50) {
       this.responseWindow();
       while (this.S.chain.length) this.resolveLink(this.S.chain.pop());
       this.collectTriggers();
     }
+  }
+  activateResponse(player, pick) {
+    if (pick.fetch) this.declareFetch(player, pick.uid);
+    else this.declare(pick.uid, pick.eid, { check: 'none' });
+  }
+  quickEffectWindow({ window = 'fast_timing', firstPlayer = this.S.turn.player } = {}) {
+    let passes = 0, p = firstPlayer, guard = 0;
+    while (passes < 2 && guard++ < 50) {
+      const options = this.options(p, false, { fastOnly: true });
+      const pick = options.length ? this.respond({ player: p, options, chain: [], window }) : null;
+      if (pick) {
+        this.activateResponse(p, pick);
+        this.resolveChains();
+        passes = 0;
+        p = this.S.turn.player;
+      } else {
+        passes++;
+        p = OTHER(p);
+      }
+    }
+  }
+  // 턴 플레이어가 다음 단계로 넘어가려 하면 상대가 먼저 빠른 효과를 쓸 수 있다.
+  phaseBoundaryWindow() {
+    const turnPlayer = this.S.turn.player;
+    const responder = OTHER(turnPlayer);
+    const options = this.options(responder, false, { fastOnly: true });
+    const pick = options.length
+      ? this.respond({ player: responder, options, chain: [], window: 'phase_end' })
+      : null;
+    if (!pick) return;
+    this.activateResponse(responder, pick);
+    this.resolveChains();
+    this.quickEffectWindow({ window: 'after_resolution', firstPlayer: turnPlayer });
   }
   responseWindow() {
     let passes = 0;
@@ -588,9 +643,14 @@ export class Engine {
       const opts = this.options(p, true);
       const f = this.fetchOptions(p);
       const all = [...opts, ...f];
-      const pick = all.length ? this.respond({ player: p, options: all, chain: this.S.chain.map((l) => ({ ...l, ctx: undefined })) }) : null;
+      const pick = all.length ? this.respond({
+        player: p,
+        options: all,
+        chain: this.S.chain.map((l) => ({ ...l, ctx: undefined })),
+        window: 'chain_response',
+      }) : null;
       if (pick) {
-        if (pick.fetch) this.declareFetch(p, pick.uid); else this.declare(pick.uid, pick.eid, { check: 'none' });
+        this.activateResponse(p, pick);
         passes = 0;
       } else passes++;
       p = OTHER(p);
@@ -675,7 +735,11 @@ export class Engine {
           }
     }
   }
-  processTriggers() { this.collectTriggers(); if (this.S.chain.length) this.runChain(); }
+  processTriggers({ window = 'after_action' } = {}) {
+    this.collectTriggers();
+    if (this.S.chain.length) this.runChain();
+    else this.quickEffectWindow({ window });
+  }
 
   // ---------- 가져오기(키 카드): 체인에 올라가지만 무효 불가, 같은 체인에 1개만 ----------
   fetchOk(player, uid) {
@@ -806,8 +870,13 @@ export class Engine {
     this.S.draws = { A: 0, B: 0 };
     this.S.turnLog = { applied: {}, graveBy: {}, attacked: [] };
     this.S.restrictions = []; this.S.disabled = {}; this.S.temp = []; // 턴 종료시까지의 잔존 효과 해제
-    if (!first) { this.runStep({ type: 'draw', count: 1 }, { player, sel: {} }); this.processTriggers(); }
+    if (!first) {
+      this.quickEffectWindow({ window: 'draw_start' });
+      this.runStep({ type: 'draw', count: 1 }, { player, sel: {} });
+      this.processTriggers({ window: 'draw_end' });
+    }
     this.S.turn.phase = 'deploy';
+    this.quickEffectWindow({ window: 'phase_start' });
   }
   loser() {
     for (const p of ['A', 'B']) if (this.S.players[p].hand.length === 0) return p;

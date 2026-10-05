@@ -1,11 +1,39 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDuel, defaultPlayerDeck } from "../../server/src/duel.js";
+import { createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
 import { MatchError, MatchStore } from "../src/game-store.mjs";
+
+
+function passResponseWindows(game) {
+  let attempts = 0;
+  while (game.pending?.prompt.type === "respond" && attempts++ < 100) {
+    const player = game.pending.prompt.player === "A" ? 0 : 1;
+    game = executeDuelCommand(game, player, { type: "choice", values: ["pass"] });
+  }
+  return game;
+}
+
+
+function passStoreWindows(store, code) {
+  for (let attempts = 0; attempts < 100; attempts += 1) {
+    const human = store.getState(code, 0).snapshot.pendingChoice;
+    const ai = store.getState(code, 1).snapshot.pendingChoice;
+    if (human && !human.waiting) {
+      store.applyHumanCommand(code, { type: "choice", values: ["pass"] });
+      continue;
+    }
+    if (ai && !ai.waiting) {
+      store.applyAiAction(code, { choiceValues: ["pass"] });
+      continue;
+    }
+    if (!human && !ai) return store.getState(code, 0);
+  }
+  throw new Error("Quick-timing windows did not finish after consecutive passes.");
+}
 
 function storeStartingOnAiTurn() {
   const factory = () => {
-    const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+    const game = passResponseWindows(createDuel([defaultPlayerDeck(), defaultPlayerDeck()]));
     game.state.turn = { player: "B", phase: "deploy", number: 1 };
     return game;
   };
@@ -32,8 +60,9 @@ test("AI receives revision-bound legal actions and can execute only the current 
   assert.ok(legal.actions.some((action) => action.command.type === "next_phase"));
 
   const action = legal.actions.find((item) => item.command.type === "next_phase");
-  const after = store.applyAiAction(created.code, { actionId: action.actionId });
-  assert.equal(after.revision, 1);
+  const pending = store.applyAiAction(created.code, { actionId: action.actionId });
+  assert.equal(pending.revision, 1);
+  const after = passStoreWindows(store, created.code);
   assert.equal(after.snapshot.phase, "attack");
   assert.throws(
     () => store.applyAiAction(created.code, { actionId: action.actionId }),
@@ -44,7 +73,7 @@ test("AI receives revision-bound legal actions and can execute only the current 
 test("the MCP AI seat cannot act during the human player's turn", () => {
   const store = new MatchStore({
     duelFactory: () => {
-      const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+      const game = passResponseWindows(createDuel([defaultPlayerDeck(), defaultPlayerDeck()]));
       game.state.turn = { player: "A", phase: "deploy", number: 1 };
       return game;
     },

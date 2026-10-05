@@ -19,6 +19,41 @@ async function json(response) {
   return response.json();
 }
 
+async function passPendingQuickWindows(worker, env, path, first, second) {
+  const participants = [
+    { token: "ok", seatToken: first.seatToken },
+    { token: "second", seatToken: second.seatToken },
+  ];
+
+  for (let attempts = 0; attempts < 100; attempts += 1) {
+    const snapshots = await Promise.all(participants.map(async (participant) => {
+      const response = await worker.fetch(apiRequest(`${path}/state`, {
+        token: participant.token,
+        seatToken: participant.seatToken,
+      }), env);
+      return json(response);
+    }));
+    const responder = snapshots.findIndex(({ room }) =>
+      room.duel?.pendingChoice && !room.duel.pendingChoice.waiting);
+    if (responder < 0) {
+      assert.equal(snapshots.some(({ room }) => room.duel?.pendingChoice?.waiting), false);
+      return snapshots;
+    }
+
+    const participant = participants[responder];
+    const response = await worker.fetch(apiRequest(`${path}/action`, {
+      method: "POST",
+      token: participant.token,
+      seatToken: participant.seatToken,
+      body: { type: "choice", values: ["pass"] },
+    }), env);
+    const result = await json(response);
+    assert.equal(response.status, 200, result.message ?? result.error);
+  }
+
+  throw new Error("Quick-timing windows did not finish after consecutive passes.");
+}
+
 describe("online room API", () => {
   it("creates a four-digit private room and never returns server token hashes", async () => {
     const { worker, env } = setup();
@@ -162,6 +197,7 @@ describe("online room API", () => {
     const started = await json(finalReady);
     assert.equal(started.room.phase, "playing");
     const firstSeat = started.room.duel.turnSeat;
+    await passPendingQuickWindows(worker, env, path, created, guest);
     assert.equal(started.room.duel.players[firstSeat].handCount, 6);
     assert.equal(started.room.duel.players[1 - firstSeat].handCount, 7);
     assert.equal(started.room.duel.players[0].hand.length, started.room.duel.players[0].handCount);
@@ -179,7 +215,8 @@ describe("online room API", () => {
       body: { type: "next_phase" },
     }), env);
     assert.equal(nextPhase.status, 200);
-    assert.equal((await json(nextPhase)).room.duel.phase, "attack");
+    const afterBoundaryPasses = await passPendingQuickWindows(worker, env, path, created, guest);
+    assert.equal(afterBoundaryPasses[activeSeat].room.duel.phase, "attack");
 
     const wrongSeat = 1 - activeSeat;
     const wrongSeatResponse = await worker.fetch(apiRequest(`${path}/action`, {

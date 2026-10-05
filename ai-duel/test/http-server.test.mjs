@@ -1,8 +1,34 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDuel, defaultPlayerDeck } from "../../server/src/duel.js";
+import { createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
 import { MatchStore } from "../src/game-store.mjs";
 import { dispatchApiRequest } from "../src/http-server.mjs";
+function passStoreWindows(store, code) {
+  for (let attempts = 0; attempts < 100; attempts += 1) {
+    const human = store.getState(code, 0).snapshot.pendingChoice;
+    const ai = store.getState(code, 1).snapshot.pendingChoice;
+    if (human && !human.waiting) {
+      store.applyHumanCommand(code, { type: "choice", values: ["pass"] });
+      continue;
+    }
+    if (ai && !ai.waiting) {
+      store.applyAiAction(code, { choiceValues: ["pass"] });
+      continue;
+    }
+    if (!human && !ai) return store.getState(code, 0);
+  }
+  throw new Error("Quick-timing windows did not finish after consecutive passes.");
+}
+
+function passResponseWindows(game) {
+  let attempts = 0;
+  while (game.pending?.prompt.type === "respond" && attempts++ < 100) {
+    const player = game.pending.prompt.player === "A" ? 0 : 1;
+    game = executeDuelCommand(game, player, { type: "choice", values: ["pass"] });
+  }
+  return game;
+}
+
 
 test("API routes return the card list and start a match with the supplied AI deck", () => {
   const store = new MatchStore();
@@ -37,7 +63,7 @@ test("API routes return the card list and start a match with the supplied AI dec
 test("human and manual AI routes both use the same authoritative command engine", () => {
   const humanStore = new MatchStore({
     duelFactory: (decks) => {
-      const game = createDuel(decks);
+      const game = passResponseWindows(createDuel(decks));
       game.state.turn = { player: "A", phase: "deploy", number: 1 };
       return game;
     },
@@ -49,11 +75,12 @@ test("human and manual AI routes both use the same authoritative command engine"
     pathname: "/api/games/" + humanGame.code + "/action",
     body: { command: { type: "next_phase" } },
   });
-  assert.equal(humanResult.body.snapshot.phase, "attack");
+  assert.equal(humanResult.body.revision, 1);
+  assert.equal(passStoreWindows(humanStore, humanGame.code).snapshot.phase, "attack");
 
   const aiStore = new MatchStore({
     duelFactory: (decks) => {
-      const game = createDuel(decks);
+      const game = passResponseWindows(createDuel(decks));
       game.state.turn = { player: "B", phase: "deploy", number: 1 };
       return game;
     },
@@ -68,7 +95,8 @@ test("human and manual AI routes both use the same authoritative command engine"
     pathname: "/api/games/" + aiGame.code + "/ai-action",
     body: { action_id: nextPhase.actionId },
   });
-  assert.equal(applied.body.snapshot.phase, "attack");
+  assert.equal(applied.body.revision, 1);
+  assert.equal(passStoreWindows(aiStore, aiGame.code).snapshot.phase, "attack");
 });
 
 test("does not route unknown API paths and rejects malformed game setup bodies", () => {
