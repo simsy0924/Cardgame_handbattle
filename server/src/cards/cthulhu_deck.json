@@ -1,0 +1,2635 @@
+{
+  "cards": [
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "그레이트 올드 원"
+      ],
+      "id": "cthulhu_001",
+      "name": "그레이트 올드 원-크툴루",
+      "type": "monster",
+      "deck": "main",
+      "attack": 5,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "hand"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "name": "태평양 속 르뤼에"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "place_in_field_zone",
+                  "card": "s1",
+                  "face": "up"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "field_all",
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "own_field_all",
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [],
+      "id": "cthulhu_002",
+      "name": "태평양 속 르뤼에",
+      "type": "field",
+      "deck": "main",
+      "activation_zone": "field_zone",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field_zone"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "grave",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field_zone"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "grave",
+                "filter": {
+                  "tag": "그레이트 올드 원",
+                  "type": "monster"
+                },
+                "count": 1
+              },
+              {
+                "type": "add_to_hand",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "엘더 갓"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "banish",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field_zone"
+          },
+          "continuous": {
+            "type": "resolution_option",
+            "when": {
+              "effect_of": "self_player",
+              "source_filter": {
+                "tag": "그레이트 올드 원",
+                "type": "monster"
+              }
+            },
+            "may": "negate_that_effect",
+            "cost_already_paid_stays": true,
+            "chain": false,
+            "lingering": true
+          },
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "kind": "application"
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "그레이트 올드 원"
+      ],
+      "id": "cthulhu_003",
+      "name": "그레이트 올드 원-크투가",
+      "type": "monster",
+      "deck": "main",
+      "attack": 4,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "hand"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": [
+                    "own_field_zone",
+                    "opponent_field_zone"
+                  ],
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "hand",
+                "filter": {
+                  "type": "monster"
+                },
+                "count": 1
+              },
+              {
+                "type": "summon",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "own_field_all",
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "grave_both",
+                  "count": 2
+                },
+                {
+                  "type": "banish",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "그레이트 올드 원"
+      ],
+      "id": "cthulhu_004",
+      "name": "그레이트 올드 원-크아이가",
+      "type": "monster",
+      "deck": "main",
+      "attack": 4,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "hand"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "chooser": "self",
+                  "count": 1
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_field_all",
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "chooser": "self",
+                  "count": 1
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "shared:e2e3"
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_field_all",
+                "count": {
+                  "min": 1,
+                  "max": 2
+                }
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "chooser": "self",
+                  "count": 1
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "shared:e2e3"
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e4",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "엘더 갓",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "banish",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "그레이트 올드 원"
+      ],
+      "id": "cthulhu_005",
+      "name": "그레이트 올드 원-과타노차",
+      "type": "monster",
+      "deck": "main",
+      "attack": 4,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "own_field",
+                "filter": {
+                  "tag": "그레이트 올드 원",
+                  "type": "monster"
+                },
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "from": "hand",
+                  "card": "self"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": [
+                  "opponent_hand",
+                  "opponent_field_all"
+                ],
+                "hidden_hand": "random",
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "self"
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "엘더 갓"
+      ],
+      "id": "cthulhu_006",
+      "name": "엘더 갓-노덴스",
+      "type": "monster",
+      "deck": "main",
+      "attack": 6,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "to": [
+                "grave",
+                "banished"
+              ]
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [
+              {
+                "type": "summon",
+                "card": "self",
+                "from": [
+                  "grave",
+                  "banished"
+                ]
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "own_field",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": {
+                    "min": 1,
+                    "max": null
+                  }
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 2
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null,
+            "any_of": [
+              {
+                "turn": "both",
+                "phase": "draw",
+                "event": null
+              },
+              {
+                "turn": "self",
+                "phase": "deploy",
+                "event": null
+              }
+            ]
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "grave",
+                "filter": {
+                  "tag": "그레이트 올드 원",
+                  "type": "monster"
+                },
+                "count": 1
+              },
+              {
+                "type": "banish",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 2
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "엘더 갓"
+      ],
+      "id": "cthulhu_007",
+      "name": "엘더 갓-크타니트",
+      "type": "monster",
+      "deck": "main",
+      "attack": 5,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": [
+              "hand",
+              "banished"
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": [
+                  "hand",
+                  "banished"
+                ]
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "both",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_hand",
+                "count": 1,
+                "chooser": "opponent"
+              },
+              {
+                "type": "discard",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "shared:e2e3"
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": "both",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_deck_top",
+                "count": 1
+              },
+              {
+                "type": "banish",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": true,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "filter": {
+                    "type": "monster"
+                  },
+                  "chooser": "self",
+                  "count": 1,
+                  "optional": true
+                },
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "opponent_hand",
+                  "filter": {
+                    "type": "monster"
+                  },
+                  "chooser": "opponent",
+                  "count": 1,
+                  "optional": true
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                },
+                {
+                  "type": "summon",
+                  "card": "s2",
+                  "player": "opponent"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "shared:e2e3"
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "아우터 갓"
+      ],
+      "id": "cthulhu_008",
+      "name": "아우터 갓-니알라토텝",
+      "type": "monster",
+      "deck": "key",
+      "attack": 6,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_restriction": {
+        "only_by_own_effects": true
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "keydeck"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_field_all",
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              },
+              {
+                "type": "select",
+                "id": "c2",
+                "from": "own_field",
+                "filter": {
+                  "tag": "그레이트 올드 원",
+                  "type": "monster"
+                },
+                "count": 2
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c2"
+              },
+              {
+                "type": "select",
+                "id": "c3",
+                "from": "own_field",
+                "filter": {
+                  "tag": "엘더 갓",
+                  "type": "monster"
+                },
+                "count": 2
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c3"
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "keydeck"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "restrict",
+                  "what": "summon_limit",
+                  "players": "self",
+                  "count": 2,
+                  "duration": "end_of_turn",
+                  "id": "niar_e1_limit"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null,
+            "any_of": [
+              {
+                "turn": null,
+                "phase": null,
+                "event": {
+                  "type": "summoned",
+                  "card": "self",
+                  "from": null
+                }
+              },
+              {
+                "turn": "opponent",
+                "phase": "all",
+                "event": null
+              }
+            ]
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": true,
+            "targets": [
+              {
+                "kind": "card",
+                "id": "t1",
+                "from": "opponent_field",
+                "filter": {
+                  "type": "monster"
+                },
+                "count": 1
+              }
+            ]
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "disable_effects",
+                  "card": "t1",
+                  "duration": "end_of_turn"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "copy_card",
+                  "card": "self",
+                  "from": "t1",
+                  "gain": [
+                    "name",
+                    "attack",
+                    "effects"
+                  ],
+                  "duration": "permanent"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": null,
+              "turn": "self"
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "replace_effect",
+                  "effect": "chain.last",
+                  "perspective": "effect_controller",
+                  "with": [
+                    {
+                      "group": 1,
+                      "apply": "simultaneous",
+                      "allow_partial": false,
+                      "steps": [
+                        {
+                          "type": "select",
+                          "id": "s1",
+                          "from": "opponent_field_all",
+                          "filter": {
+                            "name": "아우터 갓-니알라토텝"
+                          },
+                          "count": 1
+                        },
+                        {
+                          "type": "send_to_grave",
+                          "card": "s1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "아우터 갓"
+      ],
+      "id": "cthulhu_009",
+      "name": "아우터 갓-아자토스",
+      "type": "monster",
+      "deck": "key",
+      "attack": 10,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_restriction": {
+        "only_by_own_effects": true
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "continuous": [
+            {
+              "type": "immunity",
+              "from": "all_other_card_effects",
+              "except": null
+            },
+            {
+              "type": "protection",
+              "what": "cannot_be_sent_to_grave"
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card_filter": {
+                "tag": "아우터 갓",
+                "type": "monster"
+              },
+              "owner": "self",
+              "from": "field",
+              "cause_player": "opponent",
+              "cause": "effect"
+            }
+          },
+          "condition": {
+            "card_location": "keydeck",
+            "event_card_in": [
+              "hand_revealed",
+              "grave",
+              "banished"
+            ]
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "return_to_deck",
+                "card": "event.card"
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "keydeck"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "discard_down_to",
+                  "player": "self",
+                  "remaining": 3,
+                  "chooser": "self"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "field_all",
+                "count": {
+                  "min": 1,
+                  "max": 3
+                }
+              },
+              {
+                "type": "disable_effects",
+                "card": "c1",
+                "duration": "end_of_turn"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "choose_number",
+                  "id": "n",
+                  "min": 1,
+                  "max": 2,
+                  "limit_by": [
+                    "own_field_all",
+                    "opponent_field_all"
+                  ]
+                },
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "own_field_all",
+                  "count": {
+                    "var": "n"
+                  }
+                },
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "opponent_field_all",
+                  "count": {
+                    "var": "n"
+                  }
+                },
+                {
+                  "type": "banish",
+                  "card": "s1"
+                },
+                {
+                  "type": "banish",
+                  "card": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e4",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "from": "field",
+              "cause_card": "self"
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [
+              {
+                "type": "summon",
+                "card": "self",
+                "from": [
+                  "grave",
+                  "banished"
+                ]
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "chooser": "self",
+                  "count": 1
+                },
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "opponent_hand",
+                  "chooser": "opponent",
+                  "count": 1
+                },
+                {
+                  "type": "banish",
+                  "card": "s1"
+                },
+                {
+                  "type": "banish",
+                  "card": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "아우터 갓"
+      ],
+      "id": "cthulhu_010",
+      "name": "아우터 갓-슈브 니구라스",
+      "type": "monster",
+      "deck": "key",
+      "attack": 0,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_restriction": {
+        "only_by_own_effects": true
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card_filter": {
+                "tag": "그레이트 올드 원",
+                "type": "monster"
+              },
+              "by": "self",
+              "from": null
+            }
+          },
+          "condition": {
+            "card_location": "keydeck"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "keydeck"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "effect_activated",
+              "by": "opponent",
+              "effect_filter": null
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "deck",
+                "filter": {
+                  "tag": "엘더 갓",
+                  "type": "monster"
+                },
+                "count": 1
+              },
+              {
+                "type": "banish",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "negate_effect",
+                  "effect": "chain.last"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "continuous": [
+            {
+              "type": "immunity",
+              "from": "opponent_card_effects",
+              "except": null
+            },
+            {
+              "type": "protection",
+              "what": "cannot_be_attacked"
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "엘더 갓"
+      ],
+      "id": "cthulhu_011",
+      "name": "엘더 갓-히프노스",
+      "type": "monster",
+      "deck": "main",
+      "attack": 4,
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "to": [
+                "banished"
+              ]
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "banished"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "hand",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "chooser": "self",
+                  "count": 1
+                },
+                {
+                  "type": "discard",
+                  "card": "s1"
+                }
+              ]
+            },
+            {
+              "group": 3,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "optional": true,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "continuous": {
+            "type": "untargetable",
+            "scope": "own_field_other_cards",
+            "from": "opponent_card_effects"
+          },
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": "self",
+            "phase": "attack",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "grave",
+                  "filter": {
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "올드_원"
+      ],
+      "id": "cthulhu_012",
+      "name": "올드_원의 멸망",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "deck",
+                "filter": {
+                  "tag": "엘더 갓",
+                  "type": "monster"
+                },
+                "count": 1
+              },
+              {
+                "type": "banish",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": [
+                    "deck",
+                    "grave"
+                  ],
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "shared:e1e2"
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "opponent",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "올드_원"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "add_to_hand",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1,
+            "group": "shared:e1e2"
+          },
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "아우터 갓"
+      ],
+      "id": "cthulhu_013",
+      "name": "아우터 갓-요그 소토스",
+      "type": "monster",
+      "deck": "key",
+      "attack": 9,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_restriction": {
+        "only_by_own_effects": true
+      },
+      "unchangeable_effects": [
+        "e1"
+      ],
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "keydeck"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_hand",
+                "hidden_only": true,
+                "selection": "random",
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c1"
+              },
+              {
+                "type": "select",
+                "id": "c2",
+                "from": "own_field",
+                "filter": {
+                  "name": "그레이트 올드 원-크툴루"
+                },
+                "count": 1
+              },
+              {
+                "type": "send_to_grave",
+                "card": "c2"
+              },
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "keydeck"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "transform_lingering",
+                  "target": {
+                    "source_name": "아우터 갓-니알라토텝",
+                    "effect": "e1",
+                    "this_turn": true
+                  },
+                  "to": {
+                    "type": "delayed_loss",
+                    "turns": 5,
+                    "player": "original_effect_controller",
+                    "counted_from": "turn_of_original_activation"
+                  }
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "self",
+            "phase": "deploy",
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "opponent_hand",
+                "revealed_only": true,
+                "count": {
+                  "min": 1,
+                  "max": 2
+                }
+              },
+              {
+                "type": "discard",
+                "card": "c1",
+                "ignore_replacement": true
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "own_field_all",
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "sent_to_grave",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [
+              {
+                "type": "draw",
+                "player": "self",
+                "count": 1
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "summon",
+                  "from": "grave",
+                  "card": "self"
+                },
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e4",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": null
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "continuous": [
+            {
+              "type": "immunity",
+              "from": "all_other_card_effects",
+              "except": null
+            },
+            {
+              "type": "untargetable",
+              "scope": "own_field_other_cards",
+              "filter": {
+                "tag": "아우터 갓",
+                "type": "monster"
+              },
+              "from": "effects"
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "아우터 갓"
+      ],
+      "id": "cthulhu_014",
+      "name": "아우터 갓-우보 사틀라",
+      "type": "monster",
+      "deck": "key",
+      "attack": 0,
+      "fetch": {
+        "forbidden": true,
+        "condition": null
+      },
+      "summon_restriction": {
+        "only_by_own_effects": true
+      },
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "opponent",
+            "phase": "end",
+            "event": null
+          },
+          "condition": {
+            "card_location": "keydeck"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "summon",
+                "card": "self",
+                "from": "keydeck"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "summon",
+                  "card": "s1"
+                }
+              ]
+            },
+            {
+              "group": 2,
+              "apply": "sequential",
+              "on_prev_fail": "stop",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s2",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "엘더 갓"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "banish",
+                  "card": "s2"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "summoned",
+              "card": "self",
+              "from": null
+            }
+          },
+          "condition": {
+            "card_location": "field"
+          },
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "deck",
+                  "filter": {
+                    "tag": "그레이트 올드 원",
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "send_to_grave",
+                  "card": "s1"
+                },
+                {
+                  "type": "modify_limit",
+                  "card": "s1",
+                  "amount": 1,
+                  "duration": "end_of_turn",
+                  "player": "self"
+                }
+              ]
+            }
+          ],
+          "limit": {
+            "scope": "turn",
+            "count": 1
+          },
+          "mandatory": false
+        },
+        {
+          "id": "e3",
+          "timing": {
+            "turn": null,
+            "phase": null,
+            "event": {
+              "type": "moved_to_zone",
+              "card": "self",
+              "from": "field",
+              "to": null
+            }
+          },
+          "condition": null,
+          "cost": {
+            "pay": [],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "return_to_keydeck",
+                  "card": "self"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    },
+    {
+      "pool": "cthulhu",
+      "tags": [
+        "올드_원"
+      ],
+      "id": "cthulhu_015",
+      "name": "올드_원의 전성기",
+      "type": "spell",
+      "deck": "main",
+      "effects": [
+        {
+          "id": "e1",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "hand"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "reveal",
+                "card": "self",
+                "from": "hand",
+                "only_if_hidden": true
+              },
+              {
+                "type": "select",
+                "id": "c1",
+                "from": "own_field_all",
+                "filter": {
+                  "tag": "그레이트 올드 원"
+                },
+                "count": 1
+              },
+              {
+                "type": "return_to_hand",
+                "card": "c1"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "select",
+                  "id": "s1",
+                  "from": "opponent_field",
+                  "filter": {
+                    "type": "monster"
+                  },
+                  "count": 1
+                },
+                {
+                  "type": "grant_immunity",
+                  "card": "s1",
+                  "from": "other_cards_of_its_controller",
+                  "duration": "end_of_turn"
+                },
+                {
+                  "type": "disable_effects",
+                  "card": "s1",
+                  "duration": "end_of_turn"
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        },
+        {
+          "id": "e2",
+          "timing": {
+            "turn": "both",
+            "phase": "all",
+            "event": null
+          },
+          "condition": {
+            "card_location": "grave"
+          },
+          "cost": {
+            "pay": [
+              {
+                "type": "banish",
+                "card": "self",
+                "from": "grave"
+              }
+            ],
+            "isTargeting": false,
+            "targets": []
+          },
+          "action": [
+            {
+              "group": 1,
+              "apply": "simultaneous",
+              "allow_partial": false,
+              "steps": [
+                {
+                  "type": "draw",
+                  "player": "self",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "limit": null,
+          "mandatory": false
+        }
+      ]
+    }
+  ]
+}

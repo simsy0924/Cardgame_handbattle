@@ -949,7 +949,8 @@
           "limit": null,
           "mandatory": false
         }
-      ]
+      ],
+      "activation_effect": "e1"
     },
     {
       "pool": "generic",
