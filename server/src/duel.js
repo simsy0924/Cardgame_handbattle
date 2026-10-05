@@ -103,6 +103,7 @@ function createEngine(seed, answers = []) {
       effectId: args.effect?.id ?? null,
       event: args.event ?? null,
       loops: args.loops ?? null,
+      window: args.window ?? null,
       chain: type === "respond" ? (args.chain ?? []).map((link) => ({
         kind: link.kind,
         uid: link.uid,
@@ -126,6 +127,7 @@ function createEngine(seed, answers = []) {
       uid: args.uid ?? null,
       effectId: args.effect?.id ?? null,
       loops: args.loops ?? null,
+      window: args.window ?? null,
       signature: promptSignature(type, args),
     };
   }
@@ -176,13 +178,27 @@ export function createDuel(decks = [defaultPlayerDeck(), defaultPlayerDeck()]) {
   }
   // The opening deal is not treated as a card effect or a draw event.
   engine.S.pending = [];
-  engine.S.turn.number = 0;
-  engine.startTurn(firstPlayer, { first: true });
+  engine.S.turn = { player: firstPlayer, phase: "deploy", number: 0 };
+  const initialState = structuredClone(engine.state);
+  let pending = null;
+  try {
+    engine.startTurn(firstPlayer, { first: true });
+  } catch (error) {
+    if (!(error instanceof InputRequired)) throw error;
+    pending = {
+      command: { type: "initial_start" },
+      initiatorSeat: playerSeat(firstPlayer),
+      answers: [],
+      baseState: initialState,
+      baseRngState: engine.rngState,
+      prompt: error.prompt,
+    };
+  }
 
   return {
     state: engine.state,
     rngState: engine.rngState,
-    pending: null,
+    pending,
     winnerSeat: null,
     finished: false,
   };
@@ -243,11 +259,18 @@ function requireActiveTurn(engine, seat, phase = null) {
 function applyCommand(engine, game, seat, command) {
   const player = seatPlayer(seat);
   switch (command.type) {
+    case "initial_start": {
+      if (engine.state.turn.number !== 0 || engine.state.turn.player !== player) {
+        throw new DuelRuleError("invalid_action", "게임 시작 타이밍 창이 이미 끝났습니다.");
+      }
+      engine.startTurn(player, { first: true });
+      return;
+    }
     case "normal_summon":
       throw new DuelRuleError("invalid_action", "이 게임에는 일반 소환이 없습니다. 몬스터는 카드 효과나 키 카드 소환 절차로만 소환할 수 있습니다.");
     case "activate": {
       requireActiveTurn(engine, seat);
-      const allowed = engine.activatableIgnitions(player).some((option) =>
+      const allowed = engine.activatableEffects(player).some((option) =>
         option.uid === command.uid && option.eid === command.effectId);
       if (!allowed) throw new DuelRuleError("invalid_effect", "지금 발동할 수 없는 효과입니다.");
       engine.activate(command.uid, command.effectId);
@@ -281,10 +304,15 @@ function applyCommand(engine, game, seat, command) {
     case "next_phase": {
       requireActiveTurn(engine, seat);
       if (engine.state.turn.phase === "deploy") {
+        engine.phaseBoundaryWindow();
         engine.setPhase("attack");
+        engine.quickEffectWindow({ window: "phase_start" });
       } else if (engine.state.turn.phase === "attack") {
+        engine.phaseBoundaryWindow();
         engine.setPhase("end");
+        engine.quickEffectWindow({ window: "phase_start" });
       } else if (engine.state.turn.phase === "end") {
+        engine.phaseBoundaryWindow();
         const nextPlayer = OTHER(player);
         engine.startTurn(nextPlayer);
       } else {
@@ -333,6 +361,10 @@ export function executeDuelCommand(game, seat, command) {
   } catch (error) {
     if (!(error instanceof InputRequired)) throw error;
     working.state = structuredClone(baseState);
+    if (action.type === "initial_start") {
+      working.state.turn.phase = "deploy";
+      working.state.turn.number = 1;
+    }
     working.rngState = baseRngState;
     working.pending = {
       command: structuredClone(action),
@@ -400,7 +432,17 @@ function choicePrompt(game, engine, viewerSeat) {
   let min = 1;
   let max = 1;
   if (prompt.type === "respond") {
-    title = "체인에 응답할 효과를 선택하세요";
+    const windowTitles = {
+      draw_start: "드로우 개시 퀵타이밍",
+      draw_end: "드로우 종료 퀵타이밍",
+      phase_start: "단계 개시 퀵타이밍",
+      phase_end: "단계 종료 퀵타이밍",
+      after_resolution: "효과 처리 후 퀵타이밍",
+      after_action: "행동 후 퀵타이밍",
+    };
+    title = prompt.window === "chain_response"
+      ? "체인에 응답할 효과를 선택하세요"
+      : windowTitles[prompt.window] ?? "빠른 효과 발동 창";
     options = prompt.options.map((option, index) => {
       if (option.fetch) {
         return { value: String(index), label: `${engine.def(option.uid).name} 가져오기` };
@@ -447,7 +489,7 @@ function availableActions(engine, game, seat) {
     }
   }
 
-  for (const option of engine.activatableIgnitions(player)) {
+  for (const option of engine.activatableEffects(player)) {
     actions.push({
       type: "activate",
       uid: option.uid,
