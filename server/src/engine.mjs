@@ -609,7 +609,7 @@ export class Engine {
   quickEffectWindow({ window = 'fast_timing', firstPlayer = this.S.turn.player } = {}) {
     let passes = 0, p = firstPlayer, guard = 0;
     while (passes < 2 && guard++ < 50) {
-      const options = [...this.options(p, false, { fastOnly: true }), ...this.fetchOptions(p)];
+      const options = this.options(p, false, { fastOnly: true });
       const pick = options.length ? this.respond({ player: p, options, chain: [], window }) : null;
       if (pick) {
         this.activateResponse(p, pick);
@@ -626,7 +626,7 @@ export class Engine {
   phaseBoundaryWindow() {
     const turnPlayer = this.S.turn.player;
     const responder = OTHER(turnPlayer);
-    const options = [...this.options(responder, false, { fastOnly: true }), ...this.fetchOptions(responder)];
+    const options = this.options(responder, false, { fastOnly: true });
     const pick = options.length
       ? this.respond({ player: responder, options, chain: [], window: 'phase_end' })
       : null;
