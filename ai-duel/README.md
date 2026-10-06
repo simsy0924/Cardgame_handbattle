@@ -42,14 +42,16 @@ The game API is available on the configured port. /mcp exposes the Streamable HT
 
 ## MCP tools
 
-In ChatGPT, install the Hand Battle AI Duel plugin hosted on ChatGPT Sites (see [`chatgpt-plugin/`](../chatgpt-plugin/)); it publishes these tools as `hand_battle_get_game_rules`, `hand_battle_get_card_catalog`, `hand_battle_get_duel_state`, `hand_battle_get_legal_actions` and `hand_battle_duel_action`. Paste the game code copied from the app into the conversation. In Claude, connect an MCP server at https://hand-battle-ai-mcp.onrender.com/mcp, which exposes the canonical names below. The endpoint negotiates MCP protocol versions 2024-11-05 through 2026-07-28 and answers an unknown version with the newest supported one.
+In ChatGPT, install the Hand Battle AI Duel plugin hosted on ChatGPT Sites (see [`chatgpt-plugin/`](../chatgpt-plugin/)); it publishes the tools below with the `hand_battle_` prefix. Paste the game code copied from the app into the conversation. In Claude, connect an MCP server at https://hand-battle-ai-mcp.onrender.com/mcp, which exposes the canonical names below. The endpoint negotiates MCP protocol versions 2024-11-05 through 2026-07-28 and answers an unknown version with the newest supported one.
 
 | Tool | Access | Purpose |
 | --- | --- | --- |
 | get_game_rules | Read | Read the duel rules and deck limits. |
 | get_card_catalog | Read | Read card names and official effect text. |
 | get_duel_state | Read | Inspect the match as seat B; seat A's unrevealed hand stays hidden. |
-| get_legal_actions | Read | Get the current legal AI actions or an open choice prompt. |
-| duel_action | Write | Apply one current legal AI action or submit the AI's choice. |
+| get_recent_events | Read | Read recent events, optionally starting after an event ID. |
+| get_legal_actions | Read | Get the current legal AI actions, chain context, or an open choice prompt. |
+| wait_for_action | Read | Wait up to 30 seconds for seat B's turn or a response prompt. |
+| duel_action | Write | Apply one current legal AI action or submit the AI's choice; returns a compact state delta. |
 
-Action IDs are tied to the current match revision. If the board changes, request legal actions again. The human makes moves in the Android app.
+State snapshots include card IDs and names, current chain links, a recent event log, and the current turn owner. Card descriptions are read through `get_card_catalog` instead of being repeated in every state response. Action IDs are tied to the current match revision. If the board changes, request legal actions again. The human makes moves in the Android app.

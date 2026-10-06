@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
+import { CARD_DEFINITIONS, createDuel, defaultPlayerDeck, executeDuelCommand } from "../../server/src/duel.js";
 import { MatchError, MatchStore } from "../src/game-store.mjs";
 
 
@@ -40,16 +40,93 @@ function storeStartingOnAiTurn() {
   return new MatchStore({ duelFactory: factory });
 }
 
-test("AI viewpoint keeps the human hand hidden and includes its own visible card details", () => {
+test("AI viewpoint keeps the human hand hidden and sends card IDs without repeating descriptions", () => {
   const store = new MatchStore();
   const created = store.create({ aiDeck: { name: "Test AI", ...defaultPlayerDeck() } });
   const state = store.getState(created.code, 1);
+  const appState = store.getState(created.code, 0);
   const human = state.snapshot.players[0];
   const ai = state.snapshot.players[1];
 
   assert.equal(human.hand.every((card) => card.hidden && card.name === null && card.uid === null && card.id === null), true);
-  assert.equal(ai.hand.every((card) => !card.hidden && card.uid && card.id && card.description), true);
+  assert.equal(ai.hand.every((card) => !card.hidden && card.uid && card.id && !Object.hasOwn(card, "description")), true);
+  assert.equal(appState.snapshot.players[0].hand.every((card) => card.description), true);
   assert.equal(state.aiName, "Test AI");
+});
+
+test("AI state refresh reflects a human summon even when hand and deck counts stay the same", () => {
+  const monster = CARD_DEFINITIONS.find((card) => card.id === "cthulhu_001");
+  const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+  game.pending = null;
+  game.state.players.B.hand = [];
+  game.state.players.B.field = [];
+  game.state.turn = { player: "A", phase: "deploy", number: 1 };
+
+  const addInstance = (id, zone) => {
+    const uid = `${id}#test-${++game.state.seq}`;
+    game.state.cards[uid] = { uid, id, owner: "A", zone, revealed: false, bonus: 0, ...(zone === "field" ? { ctrl: "A" } : {}) };
+    game.state.players.A[zone].push(uid);
+    return uid;
+  };
+  addInstance(monster.id, "field");
+  addInstance(monster.id, "field");
+  const keyUid = addInstance("generic_001", "keydeck");
+
+  const store = new MatchStore({ duelFactory: () => game });
+  const created = store.create({ aiDeck: defaultPlayerDeck() });
+  const before = store.getState(created.code, 1).snapshot.players[0];
+  const beforeHandCount = before.handCount;
+  const beforeDeckCount = before.deckCount;
+  assert.equal(before.field.length, 2);
+
+  store.applyHumanCommand(created.code, { type: "key_summon", uid: keyUid });
+  const after = store.getState(created.code, 1);
+  const human = after.snapshot.players[0];
+  const delta = store.getLatestDelta(created.code);
+  assert.equal(after.revision, 1);
+  assert.equal(human.handCount, beforeHandCount);
+  assert.equal(human.deckCount, beforeDeckCount);
+  assert.deepEqual(human.field.map((card) => card.id), ["generic_001"]);
+  assert.ok(after.snapshot.recentEvents.some((event) => event.text.includes("키 카드 소환")));
+  assert.ok(delta.changedZones.some((zone) => zone.seat === 0 && zone.zone === "field" && zone.added.some((card) => card.id === "generic_001")));
+});
+
+test("chain and choice context identify the effect and trigger without revealing hidden cards", () => {
+  const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+  game.pending = null;
+  const aiUid = game.state.players.B.hand[0];
+  const hiddenHumanUid = game.state.players.A.hand[0];
+  game.state.chain = [{ kind: "effect", uid: aiUid, eid: "e2", player: "B", negated: false }];
+  game.pending = {
+    answers: [],
+    prompt: {
+      type: "confirm",
+      player: "B",
+      uid: aiUid,
+      effectId: "e2",
+      event: { type: "summoned", uid: hiddenHumanUid, player: "A" },
+    },
+  };
+  const store = new MatchStore({ duelFactory: () => game });
+  const created = store.create({ aiDeck: defaultPlayerDeck() });
+  const snapshot = store.getState(created.code, 1).snapshot;
+
+  assert.equal(snapshot.chain[0].effectId, "e2");
+  assert.equal(snapshot.chain[0].effectNumber, 2);
+  assert.match(snapshot.pendingChoice.title, /2번 효과/);
+  assert.match(snapshot.pendingChoice.title, /소환/);
+  assert.equal(snapshot.pendingChoice.context.trigger.card.hidden, true);
+});
+
+test("a fetch chain link hides an opponent's selected key card until it resolves", () => {
+  const game = createDuel([defaultPlayerDeck(), defaultPlayerDeck()]);
+  game.pending = null;
+  const hiddenKeyUid = game.state.players.A.keydeck[0];
+  game.state.chain = [{ kind: "fetch", uid: hiddenKeyUid, player: "A", negated: false }];
+  const store = new MatchStore({ duelFactory: () => game });
+  const created = store.create({ aiDeck: defaultPlayerDeck() });
+  const link = store.getState(created.code, 1).snapshot.chain[0];
+  assert.deepEqual(link.card, { uid: null, id: null, name: "비공개 키 카드", hidden: true });
 });
 
 test("AI receives revision-bound legal actions and can execute only the current action ID", () => {
