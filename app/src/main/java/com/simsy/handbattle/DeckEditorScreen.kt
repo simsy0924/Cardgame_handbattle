@@ -1,5 +1,6 @@
 package com.simsy.handbattle
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,10 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -37,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,6 +66,7 @@ fun DeckEditorScreen(
     onCancel: () -> Unit,
     title: String = "덱 편집",
 ) {
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     var mainCards by remember(initialDeck) { mutableStateOf(initialDeck.main) }
     var keyCards by remember(initialDeck) { mutableStateOf(initialDeck.key) }
     var editorPage by remember { mutableStateOf(0) }
@@ -96,16 +102,17 @@ fun DeckEditorScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(EditorBackground)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = if (isLandscape) 8.dp else 14.dp, vertical = if (isLandscape) 4.dp else 10.dp),
+        verticalArrangement = Arrangement.spacedBy(if (isLandscape) 4.dp else 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, color = EditorWhite, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                Text(title, color = EditorWhite, fontSize = if (isLandscape) 19.sp else 23.sp, fontWeight = FontWeight.Bold)
                 Text(
                     "메인 ${mainCards.size}/60장 · 키 카드 ${keyCards.size}/${DeckRules.KEY_DECK_MAX}장",
                     color = EditorAccent,
-                    fontSize = 12.sp,
+                    fontSize = if (isLandscape) 10.sp else 12.sp,
                 )
             }
             TextButton(onClick = onCancel, contentPadding = PaddingValues(horizontal = 7.dp)) {
@@ -148,8 +155,8 @@ fun DeckEditorScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .background(EditorPanel, RoundedCornerShape(14.dp))
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp),
+                    .padding(if (isLandscape) 7.dp else 10.dp),
+                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 3.dp else 7.dp),
             ) {
                 TabRow(selectedTabIndex = selectedDeckTab, containerColor = EditorPanel) {
                     Tab(
@@ -167,24 +174,45 @@ fun DeckEditorScreen(
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = { searchText = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (isLandscape) Modifier.heightIn(max = 64.dp) else Modifier),
                     singleLine = true,
                     label = { Text("카드명 또는 효과 검색") },
                     colors = searchColors(),
                 )
 
-                FilterChipRow(
-                    options = themeOptions,
-                    selected = selectedTheme,
-                    label = ::themeLabel,
-                    onSelect = { selectedTheme = it },
-                )
-                FilterChipRow(
-                    options = typeOptions,
-                    selected = selectedType,
-                    label = ::typeFilterLabel,
-                    onSelect = { selectedType = it },
-                )
+                if (isLandscape) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChipRow(
+                            options = themeOptions,
+                            selected = selectedTheme,
+                            label = ::themeLabel,
+                            onSelect = { selectedTheme = it },
+                            modifier = Modifier.weight(1.15f),
+                        )
+                        FilterChipRow(
+                            options = typeOptions,
+                            selected = selectedType,
+                            label = ::typeFilterLabel,
+                            onSelect = { selectedType = it },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                } else {
+                    FilterChipRow(
+                        options = themeOptions,
+                        selected = selectedTheme,
+                        label = ::themeLabel,
+                        onSelect = { selectedTheme = it },
+                    )
+                    FilterChipRow(
+                        options = typeOptions,
+                        selected = selectedType,
+                        label = ::typeFilterLabel,
+                        onSelect = { selectedType = it },
+                    )
+                }
 
                 if (matchingCards.isEmpty()) {
                     Text("검색 결과가 없습니다.", color = EditorMuted, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
@@ -221,8 +249,8 @@ fun DeckEditorScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .background(EditorPanel, RoundedCornerShape(14.dp))
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(if (isLandscape) 8.dp else 12.dp),
+                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 4.dp else 8.dp),
             ) {
                 TabRow(selectedTabIndex = selectedDeckTab, containerColor = EditorPanel) {
                     Tab(
@@ -356,8 +384,9 @@ private fun FilterChipRow(
     selected: String,
     label: (String) -> String,
     onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         items(options) { value ->
             FilterChip(
                 selected = selected == value,
