@@ -30,7 +30,7 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/health' && request.method === 'GET') {
-      return json(200, { ok: true, service: 'hand-battle-gpt-mcp', version: '2.1.0' });
+      return json(200, { ok: true, service: 'hand-battle-gpt-mcp', version: '2.2.0' });
     }
     if (url.pathname !== '/mcp') return json(404, { error: 'not_found' });
     if (request.method !== 'POST') return new Response('MCP requests must use POST.', {
@@ -61,8 +61,8 @@ export default {
     if (message.method === 'initialize') return result({
       protocolVersion: negotiateProtocolVersion(message.params?.protocolVersion),
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: 'hand-battle-ai-duel-plugin', version: '2.1.0' },
-      instructions: 'Hand Battle 전용입니다. 앱의 32자리 코드를 game_code로 전달하세요. AI는 플레이어 B입니다. hand_battle_get_game_rules와 hand_battle_get_card_catalog로 규칙과 효과를 확인하고, hand_battle_get_duel_state와 hand_battle_get_legal_actions를 읽어 합법 행동 하나씩 실행하세요. 유희왕 전개 검증기의 pairingCode 도구를 사용하지 마세요. 상대 차례이면 행동을 실행하지 말고 기다리세요.',
+      serverInfo: { name: 'hand-battle-ai-duel-plugin', version: '2.2.0' },
+      instructions: 'Hand Battle 전용입니다. 앱의 32자리 코드를 game_code로 전달하세요. AI는 플레이어 B입니다. hand_battle_get_game_rules와 hand_battle_get_card_catalog로 규칙과 효과를 확인하고, hand_battle_get_duel_state로 현재 상태를 읽으세요. 상대 차례이면 hand_battle_wait_for_action으로 차례나 응답 창을 기다릴 수 있습니다. 합법 행동은 hand_battle_get_legal_actions에서 확인하고 한 번에 하나씩 실행하세요. duel_action은 변경분을 반환하며, hand_battle_get_recent_events로 새 이벤트를 이어서 읽을 수 있습니다. 유희왕 전개 검증기의 pairingCode 도구를 사용하지 마세요.',
     });
     if (message.method === 'ping') return result({});
     if (message.method === 'tools/list') return result({ tools });
@@ -76,7 +76,7 @@ export default {
     }
     const args = message.params?.arguments ?? {};
     if (!args || typeof args !== 'object' || Array.isArray(args)) return rpcError(id, -32602, 'Invalid tool arguments');
-    if (['get_duel_state', 'get_legal_actions', 'duel_action'].includes(upstreamName) &&
+    if (['get_duel_state', 'get_legal_actions', 'get_recent_events', 'wait_for_action', 'duel_action'].includes(upstreamName) &&
         (typeof args.game_code !== 'string' || !/^[A-Fa-f0-9]{32}$/.test(args.game_code))) {
       return toolError(id, 'invalid_game_code', '앱에서 받은 32자리 대전 코드를 game_code로 전달하세요.');
     }

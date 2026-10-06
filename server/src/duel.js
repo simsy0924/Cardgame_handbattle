@@ -104,6 +104,7 @@ function createEngine(seed, answers = []) {
       options: args.options ?? null,
       uid: args.uid ?? null,
       effectId: args.effect?.id ?? null,
+      context: args.ctx ?? null,
       event: args.event ?? null,
       loops: args.loops ?? null,
       window: args.window ?? null,
@@ -129,6 +130,8 @@ function createEngine(seed, answers = []) {
       options: args.options ?? null,
       uid: args.uid ?? null,
       effectId: args.effect?.id ?? null,
+      context: args.ctx ?? null,
+      event: args.event ?? null,
       loops: args.loops ?? null,
       window: args.window ?? null,
       signature: promptSignature(type, args),
@@ -196,6 +199,7 @@ export function createDuel(decks = [defaultPlayerDeck(), defaultPlayerDeck()]) {
       baseState: initialState,
       baseRngState: engine.rngState,
       prompt: error.prompt,
+      previewLog: engine.log.slice(),
     };
   }
 
@@ -205,6 +209,7 @@ export function createDuel(decks = [defaultPlayerDeck(), defaultPlayerDeck()]) {
     pending,
     winnerSeat: null,
     finished: false,
+    initialLog: engine.log.slice(),
   };
 }
 
@@ -262,6 +267,16 @@ function requireActiveTurn(engine, seat, phase = null) {
 
 function applyCommand(engine, game, seat, command) {
   const player = seatPlayer(seat);
+  const actionNames = {
+    initial_start: "턴 시작",
+    activate: "효과 발동",
+    activate_field_card: "필드 카드 발동",
+    fetch: "키 카드 가져오기",
+    key_summon: "키 카드 소환",
+    attack: "공격 선언",
+    next_phase: "단계 이동",
+  };
+  engine.say(`행동: ${player} ${actionNames[command.type] || command.type}`);
   switch (command.type) {
     case "initial_start": {
       if (engine.state.turn.number !== 0 || engine.state.turn.player !== player) {
@@ -385,6 +400,7 @@ export function executeDuelCommand(game, seat, command) {
       baseState: structuredClone(baseState),
       baseRngState,
       prompt: error.prompt,
+      previewLog: engine.log.slice(),
     };
     return working;
   }
@@ -392,6 +408,7 @@ export function executeDuelCommand(game, seat, command) {
   working.state = engine.state;
   working.rngState = engine.rngState;
   working.pending = null;
+  working.lastActionLog = engine.log.slice();
   const emptyHands = PLAYERS.filter((player) => engine.state.players[player].hand.length === 0);
   if (emptyHands.length === 2) {
     working.finished = true;
@@ -429,6 +446,89 @@ function cardLabel(engine, uid, viewer) {
   return `${engine.effectiveName(uid)}${attack}`;
 }
 
+function effectNumber(effectId) {
+  const match = /^e(\d+)$/i.exec(effectId || "");
+  return match ? Number(match[1]) : null;
+}
+
+function effectLabel(effectId) {
+  const number = effectNumber(effectId);
+  return number === null ? effectId || "카드 발동" : `${number}번 효과`;
+}
+
+function eventReason(event) {
+  if (!event?.type) return null;
+  const reasons = {
+    use_as_effect: "다른 카드 효과의 처리 중 이 카드를 효과로 사용하려는 상황",
+    would_discard: "이 카드가 버려지려는 상황",
+    summoned: "몬스터가 소환된 상황",
+    sent_to_grave: "카드가 묘지로 보내진 상황",
+    moved_to_zone: "카드가 다른 존으로 이동한 상황",
+    added_to_hand: "카드가 패에 추가된 상황",
+    effect_activated: "다른 효과가 발동된 상황",
+    attack_declared: "공격이 선언된 상황",
+  };
+  return reasons[event.type] || `${event.type} 이벤트`;
+}
+
+function chainSnapshot(engine, viewerSeat) {
+  return engine.S.chain.map((link, index) => {
+    const card = engine.S.cards[link.uid];
+    const hiddenFetch = link.kind === "fetch" && playerSeat(link.player) !== viewerSeat;
+    const definition = card && engine.def(link.uid);
+    const publicName = hiddenFetch ? "비공개 키 카드" : definition?.name || "알 수 없는 카드";
+    return {
+      link: index + 1,
+      player: link.player,
+      playerSeat: playerSeat(link.player),
+      kind: link.kind,
+      card: hiddenFetch ? { uid: null, id: null, name: publicName, hidden: true } : {
+        uid: link.uid,
+        id: definition?.id ?? null,
+        name: publicName,
+        hidden: false,
+      },
+      effectId: link.eid ?? null,
+      effectNumber: effectNumber(link.eid),
+      negated: Boolean(link.negated),
+    };
+  });
+}
+
+function promptContext(engine, prompt, viewerSeat) {
+  const contextMatch = /^(.+):(e?[^:]+)$/.exec(prompt.context || "");
+  const sourceUid = prompt.uid || contextMatch?.[1] || null;
+  const effectId = prompt.effectId || contextMatch?.[2] || null;
+  const card = sourceUid && engine.S.cards[sourceUid] ? {
+    uid: sourceUid,
+    id: engine.def(sourceUid).id,
+    name: engine.effectiveName(sourceUid),
+  } : null;
+  const event = prompt.event;
+  let triggerCard = null;
+  if (event?.uid && engine.S.cards[event.uid]) {
+    const instance = engine.S.cards[event.uid];
+    const hidden = instance.zone === "hand" && instance.owner !== (viewerSeat === 0 ? "A" : "B") && !instance.revealed;
+    triggerCard = hidden ? { hidden: true, name: "비공개 카드" } : {
+      id: engine.def(event.uid).id,
+      name: engine.effectiveName(event.uid),
+    };
+  }
+  return {
+    card,
+    effectId,
+    effectNumber: effectNumber(effectId),
+    reason: eventReason(event) || (prompt.type === "respond" ? "현재 체인에 대한 응답" : null),
+    trigger: event ? {
+      type: event.type,
+      player: event.player ?? null,
+      from: event.from ?? null,
+      to: event.to ?? null,
+      card: triggerCard,
+    } : null,
+  };
+}
+
 function choicePrompt(game, engine, viewerSeat) {
   const pending = game.pending;
   if (!pending) return null;
@@ -439,6 +539,10 @@ function choicePrompt(game, engine, viewerSeat) {
     return { id, waiting: true, title: "상대의 선택을 기다리는 중", kind: "waiting", options: [] };
   }
 
+  const context = promptContext(engine, prompt, viewerSeat);
+  const source = context.card
+    ? `${context.card.name}${context.effectId ? ` ${effectLabel(context.effectId)}` : ""}`
+    : null;
   let title = "선택하세요";
   let options = [];
   let min = 1;
@@ -463,10 +567,14 @@ function choicePrompt(game, engine, viewerSeat) {
     });
     options.push({ value: "pass", label: "패스" });
   } else if (prompt.type === "confirm" || prompt.type === "again") {
-    title = prompt.type === "again" ? "효과를 한 번 더 처리할까요?" : "선택 효과를 발동할까요?";
-    options = [{ value: "yes", label: "예" }, { value: "no", label: "아니요" }];
+    title = prompt.type === "again"
+      ? `${source || "효과"}를 한 번 더 처리할까요?${context.reason ? ` — ${context.reason}` : ""}`
+      : `${source || "선택 효과"}를 발동할까요?${context.reason ? ` — ${context.reason}` : ""}`;
+    options = prompt.type === "again"
+      ? [{ value: "yes", label: "한 번 더 처리" }, { value: "no", label: "종료" }]
+      : [{ value: "yes", label: "발동" }, { value: "no", label: "발동하지 않음" }];
   } else if (prompt.kind === "number") {
-    title = `숫자를 선택하세요 (${prompt.min}~${prompt.max})`;
+    title = `${source ? `${source} 처리 중: ` : ""}숫자를 선택하세요 (${prompt.min}~${prompt.max})`;
     min = 1;
     max = 1;
     options = Array.from({ length: Math.max(0, prompt.max - prompt.min + 1) }, (_, index) => {
@@ -476,14 +584,14 @@ function choicePrompt(game, engine, viewerSeat) {
   } else {
     min = prompt.min ?? 1;
     max = prompt.max ?? prompt.options.length;
-    title = `카드를 선택하세요 (${min}~${max}개)`;
+    title = `${source ? `${source} 처리 중: ` : ""}카드를 선택하세요 (${min}~${max}개)`;
     options = prompt.options.map((value, index) => {
       const uids = Array.isArray(value) ? value : [value];
       return { value: String(index), label: uids.map((uid) => cardLabel(engine, uid, prompt.player)).join(" + ") };
     });
   }
 
-  return { id, waiting: false, title, kind: prompt.type, inputKind: prompt.kind, min, max, options };
+  return { id, waiting: false, title, kind: prompt.type, inputKind: prompt.kind, min, max, options, context };
 }
 
 function availableActions(engine, game, seat) {
@@ -574,9 +682,11 @@ export function duelSnapshot(game, viewerSeat) {
 
   return {
     turnSeat: playerSeat(engine.state.turn.player),
+    turnPlayer: engine.state.turn.player,
     phase: engine.state.turn.phase,
     turnNumber: engine.state.turn.number,
     players,
+    chain: chainSnapshot(engine, viewerSeat),
     actions: availableActions(engine, game, viewerSeat),
     pendingChoice: choicePrompt(game, engine, viewerSeat),
     winnerSeat: game.winnerSeat,

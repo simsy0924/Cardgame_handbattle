@@ -314,7 +314,7 @@ export class Engine {
         return true;
       }
       case 'return_to_hand': return this.moveAll(ctx, step, (u) => { const from = this.moveCard(u, 'hand', { revealed: true }); this.say(`  패로 되돌림(공개): ${this.nm(u)}`); this.emit({ type: 'added_to_hand', uid: u, from, player: this.S.cards[u].owner, revealed: true, returned: true }); }, ['field', 'field_zone', 'grave', 'banished']);
-      case 'return_to_deck': return this.moveAll(ctx, step, (u) => { this.moveCard(u, 'deck'); this.shuffle(this.S.cards[u].owner); this.say(`  덱으로(섞음): ${this.nm(u)}`); }, null);
+      case 'return_to_deck': return this.moveAll(ctx, step, (u) => { this.moveCard(u, 'deck'); this.shuffle(this.S.cards[u].owner); this.say('  덱으로(섞음): 카드 1장'); }, null);
       case 'banish': return this.restricted('banish') ? false : this.moveAll(ctx, step, (u) => { this.moveCard(u, 'banished'); this.say(`  제외: ${this.nm(u)}`); }, null);
       case 'discard': return this.moveAll(ctx, step, (u) => this.discardCard(u, ctx, step.cause, { ignoreReplacement: step.ignore_replacement }), ['hand']);
       case 'send_to_grave': return this.moveAll(ctx, step, (u) => this.toGrave(u, ctx, step.cause), ['hand', 'deck', 'field', 'field_zone', 'banished', 'keydeck']);
@@ -333,7 +333,8 @@ export class Engine {
           const u = this.S.players[who].deck[0];
           this.moveCard(u, 'hand', { revealed: false });
           this.S.draws[who]++;
-          this.say(`  드로우: ${who} ${this.nm(u)}`);
+          // Drawn cards are hidden information. The public event log records the draw count only.
+          this.say(`  드로우: ${who} 1장`);
           this.emit({ type: 'added_to_hand', uid: u, from: 'deck', player: who, by_draw: true, revealed: false });
         }
         return true;
@@ -535,7 +536,7 @@ export class Engine {
         }
         return did;
       }
-      case 'conceal_in_hand': { const c = this.S.cards[this.ref(ctx, step.card)[0]]; if (!c || c.zone !== 'hand') return false; c.revealed = false; this.say(`  일반 패로 되돌림(비공개): ${this.nm(c.uid)}`); return true; }
+      case 'conceal_in_hand': { const c = this.S.cards[this.ref(ctx, step.card)[0]]; if (!c || c.zone !== 'hand') return false; c.revealed = false; this.say('  일반 패로 되돌림(비공개): 카드 1장'); return true; }
       case 'store_var': { const c = this.S.cards[ctx.uid]; (c.memory ||= {})[step.key] = ctx.vars?.[step.var] ?? 0; return true; }
       default: throw new UnsupportedError('step:' + step.type);
     }
@@ -678,7 +679,14 @@ export class Engine {
           results.push(...r.results);
           if (!r.results[0]) break;
           if (R.max && loops >= R.max) break;
-          if (!this.again({ player: ctx.player, loops })) break;
+          if (!this.again({
+            player: ctx.player,
+            loops,
+            uid: ctx.uid,
+            effect: this.def(ctx.uid).effects.find((item) => item.id === ctx.eid),
+            event: ctx.event,
+            ctx: this.describe(ctx),
+          })) break;
         }
         if (i === 0) firstResult = loops > 0;
         continue;
@@ -720,7 +728,7 @@ export class Engine {
         case 'return_to_deck': {
           const us = !p.card || p.card === 'self' ? [ctx.uid] : this.ref(ctx, p.card);
           if (!us.length || (p.card === 'self' || !p.card) && this.S.cards[ctx.uid].zone !== 'hand') return false;
-          us.forEach((u) => { const o = this.S.cards[u].owner; this.moveCard(u, 'deck'); this.shuffle(o); this.say(`  코스트: 덱으로(섞음) ${this.nm(u)}`); });
+          us.forEach((u) => { const o = this.S.cards[u].owner; this.moveCard(u, 'deck'); this.shuffle(o); this.say('  코스트: 덱으로(섞음) 카드 1장'); });
           break;
         }
         case 'banish': {

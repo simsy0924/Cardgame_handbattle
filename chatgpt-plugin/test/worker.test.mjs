@@ -23,7 +23,7 @@ test('initialization, discovery and notifications work without contacting Render
   await withFetch(() => { throw new Error('must not contact Render'); }, async () => {
     const init = await (await worker.fetch(rpc('initialize', { protocolVersion: '2025-06-18' }, false))).json();
     assert.equal(init.result.protocolVersion, '2025-06-18');
-    assert.equal(init.result.serverInfo.version, '2.1.0');
+    assert.equal(init.result.serverInfo.version, '2.2.0');
     // ChatGPT negotiates the 2026 protocol versions; an unknown version gets the newest supported one, never an old one.
     for (const version of ['2026-07-28', '2026-01-26', '2025-11-25']) {
       const reply = await (await worker.fetch(rpc('initialize', { protocolVersion: version }, false))).json();
@@ -35,7 +35,7 @@ test('initialization, discovery and notifications work without contacting Render
     const clientResponse = await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 7, result: {} }) }));
     assert.equal(clientResponse.status, 202);
     const list = await (await worker.fetch(rpc('tools/list', {}, false))).json();
-    assert.deepEqual(list.result.tools.map(t => t.name), ['hand_battle_get_duel_state', 'hand_battle_get_legal_actions', 'hand_battle_get_card_catalog', 'hand_battle_get_game_rules', 'hand_battle_duel_action']);
+    assert.deepEqual(list.result.tools.map(t => t.name), ['hand_battle_get_duel_state', 'hand_battle_get_legal_actions', 'hand_battle_get_card_catalog', 'hand_battle_get_recent_events', 'hand_battle_get_game_rules', 'hand_battle_wait_for_action', 'hand_battle_duel_action']);
     assert.deepEqual(list.result.tools[0].inputSchema.required, ['game_code']);
     assert.equal(list.result.tools[0].inputSchema.properties.pairingCode, undefined);
     const notification = await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) }));
@@ -45,7 +45,17 @@ test('initialization, discovery and notifications work without contacting Render
 
 test('each namespaced tool forwards the canonical name, arguments and reply without credentials', async () => {
   for (const tool of tools) {
-    const args = tool.name.endsWith('duel_action') ? { game_code: code, action_id: 'end-turn' } : tool.name.endsWith('get_card_catalog') ? { card_ids: ['p1'] } : tool.name.endsWith('get_game_rules') ? {} : { game_code: code };
+    const args = tool.name.endsWith('duel_action')
+      ? { game_code: code, action_id: 'end-turn' }
+      : tool.name.endsWith('get_card_catalog')
+        ? { card_ids: ['p1'] }
+        : tool.name.endsWith('get_game_rules')
+          ? {}
+          : tool.name.endsWith('get_recent_events')
+            ? { game_code: code, after_event_id: 4 }
+            : tool.name.endsWith('wait_for_action')
+              ? { game_code: code, timeout_seconds: 5 }
+              : { game_code: code };
     let calls = 0;
     await withFetch(async request => {
       calls++;
@@ -108,7 +118,7 @@ test('malformed JSON and unsupported routes never contact the backend', async ()
     assert.equal((await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: '{' }))).status, 400);
     assert.equal((await worker.fetch(new Request('https://site.example/mcp', { method: 'POST', body: 'null' }))).status, 400);
     const health = await (await worker.fetch(new Request('https://site.example/health'))).json();
-    assert.equal(health.version, '2.1.0');
+    assert.equal(health.version, '2.2.0');
   });
 });
 

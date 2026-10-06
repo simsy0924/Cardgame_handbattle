@@ -34,16 +34,47 @@ const TOOLS = [
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
+    name: "get_recent_events",
+    title: "최근 대전 이벤트 확인",
+    description: "최근 소환, 발동, 드로우, 존 이동 등을 확인합니다. after_event_id를 전달하면 그 ID 뒤의 새 이벤트만 반환합니다.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        game_code: GAME_CODE_SCHEMA,
+        after_event_id: { type: "integer", minimum: 0, description: "마지막으로 읽은 이벤트 ID. 생략하면 최근 이벤트를 읽습니다." },
+        limit: { type: "integer", minimum: 1, maximum: 50, description: "반환할 최대 이벤트 수. 기본값 20." },
+      },
+      required: ["game_code"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  {
     name: "get_game_rules",
     title: "게임 규칙 보기",
-    description: "게임의 턴, 승리 조건, 덱 제한을 읽습니다.",
+    description: "게임의 승리 조건, 턴 순서, 체인 응답과 해결, 공개 정보, 덱 제한을 읽습니다.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  {
+    name: "wait_for_action",
+    title: "내 행동 차례까지 대기",
+    description: "AI 차례나 AI가 응답할 선택 창이 열릴 때까지 기다립니다. 제한 시간 안에 차례가 오지 않으면 현재 차례와 상태를 반환합니다.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        game_code: GAME_CODE_SCHEMA,
+        timeout_seconds: { type: "integer", minimum: 1, maximum: 30, description: "최대 대기 시간(초). 기본값 30." },
+      },
+      required: ["game_code"],
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: "duel_action",
     title: "AI 행동 실행",
-    description: "AI 플레이어(B)의 현재 합법 행동 하나를 실행하거나, AI에게 열린 선택 창에 응답합니다. 먼저 get_legal_actions를 불러 action_id 또는 choice_values를 확인하세요.",
+    description: "AI 플레이어(B)의 현재 합법 행동 하나를 실행하거나 선택 창에 응답합니다. 먼저 get_legal_actions를 확인하세요. 실행 결과는 전체 상태 대신 변경된 존, 현재 체인, 대기 선택, 이벤트만 반환합니다.",
     inputSchema: {
       type: "object",
       properties: {
@@ -62,4 +93,3 @@ const TOOLS = [
 // Preserve the GitHub/Render schemas; namespace only the published tool names.
 export const tools = TOOLS.map(tool => ({ ...tool, name: `hand_battle_${tool.name}` }));
 export const upstreamNames = new Map(tools.map(tool => [tool.name, tool.name.slice('hand_battle_'.length)]));
-
